@@ -31,7 +31,7 @@ class Document extends Attr {
 object immutable {
 
   case class Token(idx: Int, text: String, chars: (Int, Int),
-                   stem: Option[String], ner: Option[String], pos: Option[String],
+                   lemma: Option[String], ner: Option[String], pos: Option[String],
                    attrs: Map[String, String])
 
   case class Mention(id: Int, sentenceId: Int, text: String,
