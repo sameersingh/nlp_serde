@@ -15,4 +15,19 @@ class Mention extends Attr {
   var mentionType: Option[String] = None
   var ner: Option[String] = None
   var entityId: Option[String] = None
+
+  def this(m: immutable.Mention) {
+    this()
+    id = m.id
+    sentenceId = m.sentenceId
+    text = m.text
+    toks = m.toks
+    headTokenIdx = m.headTokenIdx
+    mentionType = m.mentionType
+    ner = m.ner
+    entityId = m.entityId
+    attrs ++= m.attrs
+  }
+
+  def toCase = immutable.Mention(id, sentenceId, text, toks, headTokenIdx, mentionType, ner, entityId, attrs.toMap)
 }

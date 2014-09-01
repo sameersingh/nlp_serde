@@ -13,4 +13,46 @@ class Document extends Attr {
   var path: Option[String] = None
   val sentences: ArrayBuffer[Sentence] = new ArrayBuffer
   val entities: ArrayBuffer[Entity] = new ArrayBuffer
+
+  def this(d: immutable.Document) = {
+    this()
+    id = d.id
+    text = d.text
+    path = d.path
+    sentences ++= d.sentences.map(s => new Sentence(s))
+    entities ++= d.entities.map(e => new Entity(e))
+  }
+
+  override def toString: String = "%s\t%s" format(id, text)
+
+  def toCase = immutable.Document(id, text, path, sentences.map(_.toCase), entities.map(_.toCase), attrs.toMap)
+}
+
+object immutable {
+
+  case class Token(idx: Int, text: String, chars: (Int, Int),
+                   stem: Option[String], ner: Option[String], pos: Option[String],
+                   attrs: Map[String, String])
+
+  case class Mention(id: Int, sentenceId: Int, text: String,
+                     toks: (Int, Int), headTokenIdx: Option[Int],
+                     mentionType: Option[String], ner: Option[String], entityId: Option[String],
+                     attrs: Map[String, String])
+
+  case class Relation(m1Id: Int, m2Id: Int, relations: Set[String],
+                      attrs: Map[String, String])
+
+  case class Sentence(idx: Int, text: String, chars: (Int, Int),
+                      parse: Option[String], tokens: Seq[immutable.Token],
+                      mentions: Seq[immutable.Mention], relations: Seq[immutable.Relation],
+                      attrs: Map[String, String])
+
+  case class Entity(id: Int, representativeMId: Int, mids: Set[Int],
+                    freebaseIds: Set[String], ner: Option[String],
+                    attrs: Map[String, String])
+
+  case class Document(id: String, text: String, path: Option[String],
+                      sentences: Seq[immutable.Sentence], entities: Seq[immutable.Entity],
+                      attrs: Map[String, String])
+
 }
