@@ -2,6 +2,7 @@ package org.sameersingh.nlp_serde
 
 import org.sameersingh.nlp_serde.Util.Attr
 import scala.collection.mutable.ArrayBuffer
+import org.sameersingh.nlp_serde.immutable.Dep
 
 /**
  * @author sameer
@@ -12,7 +13,7 @@ class Sentence extends Attr {
   var idx: Int = _
   var text: String = _
   var chars: (Int, Int) = _
-  var depTree: Option[String] = None
+  var depTree: Option[Seq[Dep]] = None
   var parseTree: Option[String] = None
   var tokens: ArrayBuffer[Token] = new ArrayBuffer
   var mentions: ArrayBuffer[Mention] = new ArrayBuffer

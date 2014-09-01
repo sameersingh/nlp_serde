@@ -43,8 +43,10 @@ object immutable {
   case class Relation(m1Id: Int, m2Id: Int, relations: Set[String],
                       attrs: Map[String, String])
 
+  case class Dep(label: String, source: Int, target: Int)
+
   case class Sentence(idx: Int, text: String, chars: (Int, Int),
-                      deps: Option[String], parse: Option[String], tokens: Seq[immutable.Token],
+                      deps: Option[Seq[Dep]], parse: Option[String], tokens: Seq[immutable.Token],
                       mentions: Seq[immutable.Mention], relations: Seq[immutable.Relation],
                       attrs: Map[String, String])
 

@@ -9,6 +9,8 @@ import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcess
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation
 import org.sameersingh.nlp_serde._
 import scala.collection.JavaConversions._
+import edu.stanford.nlp.semgraph.SemanticGraph
+import org.sameersingh.nlp_serde.immutable.Dep
 
 /**
  * @author sameer
@@ -20,6 +22,11 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
   val props = new Properties()
   props.put("annotators", annotators.mkString(", "))
   val pipeline = new StanfordCoreNLP(props)
+
+  def depTreeFromSemanticG(graph: SemanticGraph): Seq[Dep] = {
+    (graph.getRoots().map(e => Dep("root", 0, e.index()))
+      ++ graph.edgeIterable().map(e => Dep(e.getRelation.toString, e.getSource.index(), e.getTarget.index()))).toSeq
+  }
 
   override def process(doc: Document): Document = {
     val text = doc.text
@@ -51,7 +58,7 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       s.parseTree = Some(tree.toString)
       // this is the Stanford dependency graph of the current sentence
       val dependencies = sentence.get(classOf[CollapsedCCProcessedDependenciesAnnotation])
-      s.depTree = Some(dependencies.toString("list"))
+      s.depTree = Some(depTreeFromSemanticG(dependencies))
       doc.sentences += s
     }
 
@@ -60,7 +67,7 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       val e = new Entity()
       e.id = id.toInt
       val rep = chain.getRepresentativeMention
-      for(mention <- chain.getMentionsInTextualOrder) {
+      for (mention <- chain.getMentionsInTextualOrder) {
         val m = new Mention()
         m.entityId = Some(e.id)
         m.id = mention.mentionID
@@ -77,7 +84,7 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
         m.attrs("NUMBER") = mention.number.toString
         doc.sentences(m.sentenceId - 1).mentions += m
         e.mids += m.id
-        if(rep.position == mention.position) {
+        if (rep.position == mention.position) {
           e.representativeMId = m.id
           e.representativeString = m.text
           e.ner = m.ner
