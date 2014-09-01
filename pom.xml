@@ -30,17 +30,8 @@
             <url>https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases/</url>
         </repository>
         <repository>
-            <id>sameer-snapshots</id>
-            <name>Sameer repository</name>
-            <url>https://github.com/sameersingh/maven-repo/raw/master/snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>sameer-releases</id>
-            <name>Sameer repository</name>
-            <url>https://github.com/sameersingh/maven-repo/raw/master/releases</url>
+            <id>typesafe-releases</id>
+            <url>http://repo.typesafe.com/typesafe/releases/</url>
         </repository>
     </repositories>
 
@@ -50,6 +41,13 @@
             <artifactId>scala-library</artifactId>
             <version>${scala.version}</version>
         </dependency>
+
+      <!-- Json -->
+      <dependency>
+        <groupId>com.typesafe.play</groupId>
+        <artifactId>play-json_2.10</artifactId>
+        <version>2.3.4</version>
+      </dependency>
 
        <!-- Logging -->
         <dependency>
