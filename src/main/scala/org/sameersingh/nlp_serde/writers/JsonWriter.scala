@@ -1,6 +1,6 @@
 package org.sameersingh.nlp_serde.writers
 
-import org.sameersingh.nlp_serde.{JsonUtil, Document}
+import org.sameersingh.nlp_serde.{FileUtil, JsonUtil, Document}
 import java.io.PrintWriter
 import play.api.libs.json.Json
 
@@ -9,9 +9,9 @@ import play.api.libs.json.Json
  * @author sameer
  * @since 9/1/14.
  */
-class JsonWriter extends Writer with DocPerFile {
+class JsonWriter(gzip: Boolean = true) extends Writer with DocPerFile {
   override def writeDoc(name: String, doc: Document) {
-    val writer = new PrintWriter(name)
+    val writer = FileUtil.writer(name, gzip)
     writer.println(Json.prettyPrint(JsonUtil.fromDoc(doc.toCase)))
     writer.flush
     writer.close
@@ -23,9 +23,9 @@ class JsonWriter extends Writer with DocPerFile {
  * @author sameer
  * @since 9/1/14.
  */
-class PerLineJsonWriter extends Writer {
+class PerLineJsonWriter(gzip: Boolean = true) extends Writer {
   override def write(name: String, docs: Iterator[Document]) {
-    val writer = new PrintWriter(name)
+    val writer = FileUtil.writer(name, gzip)
     for (doc <- docs)
       writer.println(Json.prettyPrint(JsonUtil.fromDoc(doc.toCase)))
     writer.flush

@@ -1,8 +1,11 @@
 package org.sameersingh.nlp_serde
 
 import scala.collection.mutable
-import java.io.{FileFilter, File, FilenameFilter}
+import java.io._
 import play.api.libs.json._
+import play.api.libs.json.JsSuccess
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+import scala.io.BufferedSource
 
 /**
  * @author sameer
@@ -30,7 +33,21 @@ object FileFilters {
   }
 }
 
+object FileUtil {
+  def inputSource(fname: String, gzip: Boolean): BufferedSource = {
+    io.Source.fromInputStream(
+      if (gzip) new GZIPInputStream(new FileInputStream(fname))
+      else new FileInputStream(fname))("UTF-8")
+  }
+
+  def writer(fname: String, gzip: Boolean): PrintWriter =
+    new PrintWriter(
+      if (gzip) new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(fname)), "UTF-8")
+      else new FileWriter(fname))
+}
+
 object JsonUtil {
+
   import immutable._
 
   val intPairWrites: Writes[(Int, Int)] = new Writes[(Int, Int)] {

@@ -1,6 +1,6 @@
 package org.sameersingh.nlp_serde.readers
 
-import org.sameersingh.nlp_serde.{JsonUtil, Document, immutable}
+import org.sameersingh.nlp_serde.{FileUtil, JsonUtil, Document, immutable}
 import play.api.libs.json._
 
 /**
@@ -8,9 +8,9 @@ import play.api.libs.json._
  * @author sameer
  * @since 9/1/14.
  */
-class JsonReader extends Reader with DocPerFile {
+class JsonReader(gzip: Boolean = true) extends Reader with DocPerFile {
   override def readDoc(name: String): Document = {
-    val source = io.Source.fromFile(name, "UTF-8")
+    val source = FileUtil.inputSource(name, gzip)
     val json = source.getLines().mkString("\n")
     new Document(JsonUtil.toDoc(json))
   }
@@ -21,9 +21,9 @@ class JsonReader extends Reader with DocPerFile {
  * @author sameer
  * @since 9/1/14.
  */
-class PerLineJsonReader extends Reader with DocsPerFile {
+class PerLineJsonReader(gzip: Boolean = true) extends Reader with DocsPerFile {
   override def read(name: String): Iterator[Document] = {
-    io.Source.fromFile(name, "UTF-8").getLines().map(str => {
+    FileUtil.inputSource(name, gzip).getLines().map(str => {
       new Document(JsonUtil.toDoc(str))
     })
   }
