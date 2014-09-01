@@ -43,7 +43,7 @@ object immutable {
                       attrs: Map[String, String])
 
   case class Sentence(idx: Int, text: String, chars: (Int, Int),
-                      parse: Option[String], tokens: Seq[immutable.Token],
+                      deps: Option[String], parse: Option[String], tokens: Seq[immutable.Token],
                       mentions: Seq[immutable.Mention], relations: Seq[immutable.Relation],
                       attrs: Map[String, String])
 
