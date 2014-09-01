@@ -8,6 +8,7 @@ import scala.collection.mutable.ArrayBuffer
  * @since 9/1/14.
  */
 class Sentence extends Attr {
+  // 1-indexed
   var idx: Int = _
   var text: String = _
   var chars: (Int, Int) = _

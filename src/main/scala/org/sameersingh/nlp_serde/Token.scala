@@ -7,6 +7,7 @@ import org.sameersingh.nlp_serde.Util.Attr
  * @since 9/1/14.
  */
 class Token extends Attr {
+  // 1-indexed
   var idx: Int = _
   var text: String = _
   var chars: (Int, Int) = _

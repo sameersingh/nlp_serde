@@ -7,14 +7,22 @@ import org.sameersingh.nlp_serde.Util.Attr
  * @since 9/1/14.
  */
 class Mention extends Attr {
+  // 1-indexed
   var id: Int = _
+  // 1-indexed
   var sentenceId: Int = _
-  var text: String = _
+  // 1-indexed
+  var posInSentence: Int = _
+  // 1-indexed
   var toks: (Int, Int) = _
-  var headTokenIdx: Option[Int] = None
+  // 1-indexed
+  var headTokenIdx: Int = _
+
+  var text: String = _
   var mentionType: Option[String] = None
   var ner: Option[String] = None
-  var entityId: Option[String] = None
+  // 1-indexed
+  var entityId: Option[Int] = None
 
   def this(m: immutable.Mention) {
     this()
@@ -29,5 +37,5 @@ class Mention extends Attr {
     attrs ++= m.attrs
   }
 
-  def toCase = immutable.Mention(id, sentenceId, text, toks, headTokenIdx, mentionType, ner, entityId, attrs.toMap)
+  def toCase = immutable.Mention(id, sentenceId, posInSentence, text, toks, headTokenIdx, mentionType, ner, entityId, attrs.toMap)
 }

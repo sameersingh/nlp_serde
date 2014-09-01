@@ -2,6 +2,7 @@ package org.sameersingh.nlp_serde
 
 import scala.collection.mutable.ArrayBuffer
 import org.sameersingh.nlp_serde.Util.Attr
+import play.api.libs.json.Json
 
 /**
  * @author sameer
@@ -23,7 +24,7 @@ class Document extends Attr {
     entities ++= d.entities.map(e => new Entity(e))
   }
 
-  override def toString: String = "%s\t%s" format(id, text)
+  override def toString: String = Json.prettyPrint(JsonUtil.fromDoc(toCase))
 
   def toCase = immutable.Document(id, text, path, sentences.map(_.toCase), entities.map(_.toCase), attrs.toMap)
 }
@@ -34,9 +35,9 @@ object immutable {
                    lemma: Option[String], ner: Option[String], pos: Option[String],
                    attrs: Map[String, String])
 
-  case class Mention(id: Int, sentenceId: Int, text: String,
-                     toks: (Int, Int), headTokenIdx: Option[Int],
-                     mentionType: Option[String], ner: Option[String], entityId: Option[String],
+  case class Mention(id: Int, sentenceId: Int, posInSentence: Int, text: String,
+                     toks: (Int, Int), headTokenIdx: Int,
+                     mentionType: Option[String], ner: Option[String], entityId: Option[Int],
                      attrs: Map[String, String])
 
   case class Relation(m1Id: Int, m2Id: Int, relations: Set[String],
@@ -47,8 +48,8 @@ object immutable {
                       mentions: Seq[immutable.Mention], relations: Seq[immutable.Relation],
                       attrs: Map[String, String])
 
-  case class Entity(id: Int, representativeMId: Int, mids: Set[Int],
-                    freebaseIds: Set[String], ner: Option[String],
+  case class Entity(id: Int, representativeMId: Int, representativeString: String,
+                    mids: Set[Int], freebaseIds: Set[String], ner: Option[String],
                     attrs: Map[String, String])
 
   case class Document(id: String, text: String, path: Option[String],
