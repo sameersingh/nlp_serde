@@ -51,8 +51,7 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       s.parseTree = Some(tree.toString)
       // this is the Stanford dependency graph of the current sentence
       val dependencies = sentence.get(classOf[CollapsedCCProcessedDependenciesAnnotation])
-      s.depTree = Some(dependencies.toString)
-
+      s.depTree = Some(dependencies.toString("list"))
       doc.sentences += s
     }
 
