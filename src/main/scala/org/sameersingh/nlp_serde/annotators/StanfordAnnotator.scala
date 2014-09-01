@@ -4,15 +4,11 @@ import edu.stanford.nlp.pipeline.{Annotation, StanfordCoreNLP}
 import java.util.Properties
 import edu.stanford.nlp.ling.CoreAnnotations._
 import edu.stanford.nlp.ling.CoreLabel
-import edu.stanford.nlp.util.CoreMap
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation
-import edu.stanford.nlp.semgraph.SemanticGraph
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation
-import edu.stanford.nlp.dcoref.CorefChain
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation
 import org.sameersingh.nlp_serde._
 import scala.collection.JavaConversions._
-import scala.Some
 
 /**
  * @author sameer
@@ -25,38 +21,21 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
   props.put("annotators", annotators.mkString(", "))
   val pipeline = new StanfordCoreNLP(props)
 
-  def printCoreMap(c: CoreMap) {
-    println(c.toShorterString())
-    //println(c.keySet().map(k => k -> c.get(k)).mkString("\t", "\n\t", "\n"))
-  }
-
   override def process(doc: Document): Document = {
     val text = doc.text
-
-    // create an empty Annotation just with the given text
     val document = new Annotation(text)
-
-    // run all Annotators on this text
     pipeline.annotate(document)
-    //println("doc: " + document)
-    //printCoreMap(document)
 
-    // these are all the sentences in this document
-    // a CoreMap is essentially a Map that uses class objects as keys and has values with custom types
     val sentences = document.get(classOf[SentencesAnnotation])
 
     for (sentence <- sentences) {
-      //println("sen: " + sentence)
-      //printCoreMap(sentence)
       val s = new Sentence()
       s.idx = doc.sentences.size
       s.chars = sentence.get(classOf[CharacterOffsetBeginAnnotation]).toInt -> sentence.get(classOf[CharacterOffsetEndAnnotation]).toInt
       s.text = sentence.get(classOf[TextAnnotation])
       for (token: CoreLabel <- sentence.get(classOf[TokensAnnotation])) {
-        //println("tok: " + token)
-        //printCoreMap(token)
         val t = new Token()
-        t.idx = token.sentIndex()
+        t.idx = token.index()
         t.chars = token.beginPosition() -> token.endPosition()
         // t.text = token.get(classOf[TextAnnotation])
         t.text = token.originalText()
@@ -77,10 +56,6 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       doc.sentences += s
     }
 
-    // This is the coreference link graph
-    // Each chain stores a set of mentions that link to each other,
-    // along with a method for getting the most representative mention
-    // Both sentence and token offsets start at 1!
     val graph = document.get(classOf[CorefChainAnnotation])
     for ((id, chain) <- graph) {
       val e = new Entity()
