@@ -42,6 +42,13 @@
       <version>${scala.version}</version>
     </dependency>
 
+    <!-- Annotated Gigaword -->
+    <dependency>
+      <groupId>edu.jhu.agiga</groupId>
+      <artifactId>agiga</artifactId>
+      <version>1.4</version>
+    </dependency>
+
     <!-- Stanford NLP -->
     <dependency>
       <groupId>edu.stanford.nlp</groupId>
