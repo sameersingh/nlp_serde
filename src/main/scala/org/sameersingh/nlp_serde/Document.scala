@@ -51,7 +51,7 @@ object immutable {
                       attrs: Map[String, String])
 
   case class Entity(id: Int, representativeMId: Int, representativeString: String,
-                    mids: Set[Int], freebaseIds: Set[String], ner: Option[String],
+                    mids: Set[Int], freebaseIds: Seq[(String, Double)], ner: Option[String],
                     attrs: Map[String, String])
 
   case class Document(id: String, text: String, path: Option[String],

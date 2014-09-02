@@ -2,6 +2,7 @@ package org.sameersingh.nlp_serde
 
 import scala.collection.mutable
 import org.sameersingh.nlp_serde.Util.Attr
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * @author sameer
@@ -14,7 +15,7 @@ class Entity extends Attr {
   var representativeMId: Int = _
   var representativeString: String = _
   var mids: mutable.Set[Int] = new mutable.HashSet
-  var freebaseIds: mutable.Set[String] = new mutable.HashSet
+  var freebaseIds: ArrayBuffer[(String, Double)] = new ArrayBuffer
   var ner: Option[String] = None
 
   def this(d: immutable.Entity) = {
