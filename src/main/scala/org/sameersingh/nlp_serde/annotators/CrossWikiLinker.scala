@@ -7,6 +7,10 @@ import java.io.FileInputStream
 import java.util.zip.GZIPInputStream
 
 /**
+ * A simple cross wiki based linker
+ *
+ * @param dictionaryFile dictionary.bz2 distribtued with the Cross-Wiki dataset
+ * @param wikiUrlToFreebaseFile gzipped file created by grepping freebase dump with "wikipedia.en"
  * @author sameer
  * @since 9/2/14.
  */

@@ -2,7 +2,6 @@ package org.sameersingh.nlp_serde
 
 import scala.collection.mutable
 import org.sameersingh.nlp_serde.Util.Attr
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * @author sameer
@@ -15,7 +14,7 @@ class Entity extends Attr {
   var representativeMId: Int = _
   var representativeString: String = _
   var mids: mutable.Set[Int] = new mutable.HashSet
-  var freebaseIds: ArrayBuffer[(String, Double)] = new ArrayBuffer
+  var freebaseIds: mutable.Map[String, Double] = new mutable.HashMap
   var ner: Option[String] = None
 
   def this(d: immutable.Entity) = {
@@ -28,5 +27,5 @@ class Entity extends Attr {
     attrs ++= d.attrs
   }
 
-  def toCase = immutable.Entity(id, representativeMId, representativeString, mids.toSet, freebaseIds.toSet, ner, attrs.toMap)
+  def toCase = immutable.Entity(id, representativeMId, representativeString, mids.toSet, freebaseIds.toMap, ner, attrs.toMap)
 }

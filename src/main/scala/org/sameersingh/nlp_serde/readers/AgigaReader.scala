@@ -5,7 +5,6 @@ import edu.jhu.agiga.{AgigaDocument, AgigaPrefs, StreamingDocumentReader}
 import scala.collection.JavaConversions._
 import scala.Some
 import org.sameersingh.nlp_serde.immutable.Dep
-import edu.jhu.agiga.AgigaConstants.DependencyForm
 
 /**
  * @author sameer
