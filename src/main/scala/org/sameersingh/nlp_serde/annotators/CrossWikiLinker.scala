@@ -1,10 +1,11 @@
 package org.sameersingh.nlp_serde.annotators
 
-import org.sameersingh.nlp_serde.Document
+import org.sameersingh.nlp_serde.{FileUtil, Document}
 import scala.collection.mutable.{HashMap, HashSet}
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 import java.io.FileInputStream
 import java.util.zip.GZIPInputStream
+import java.util.regex.Pattern
 
 /**
  * A simple cross wiki based linker
@@ -21,6 +22,7 @@ class CrossWikiLinker(dictionaryFile: String, wikiUrlToFreebaseFile: String, cut
   readDictionary
 
   def readDictionary {
+    // e.g.: "A Piece of the Action" 0.777778 A_Piece_of_the_Action_(Star_Trek) NR RWB W:6/7 W08 W09 WDB w':1/2
     val wikiToFreebase = readWikiToFreebase
     val inputStream = new BZip2CompressorInputStream(new FileInputStream(dictionaryFile))
     val source = io.Source.fromInputStream(inputStream)
@@ -36,15 +38,18 @@ class CrossWikiLinker(dictionaryFile: String, wikiUrlToFreebaseFile: String, cut
     source.close()
   }
 
+  def extractMid(url: String): String = url.replaceAll("<http://rdf.freebase.com/ns/", "").dropRight(1)
+
   def readWikiToFreebase: HashMap[String, String] = {
+    // e.g.: <http://rdf.freebase.com/ns/m.01009ly3> <http://rdf.freebase.com/key/wikipedia.en>      "Dysdera_ancora"        .
     val wikiToFreebase: HashMap[String, String] = new HashMap
     val inputStream = new GZIPInputStream(new FileInputStream(wikiUrlToFreebaseFile))
     val source = io.Source.fromInputStream(inputStream)
     for (l <- source.getLines()) {
       val split = l.split("\\t")
-      val wikiUrl = split(0)
-      val fbId = split(1)
-      wikiToFreebase(wikiUrl) = fbId
+      val mid = extractMid(split(0))
+      val wikiTitle = FileUtil.extractWikiTitle(split(2))
+      wikiToFreebase(wikiTitle) = mid
     }
     source.close()
     wikiToFreebase

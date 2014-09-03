@@ -6,6 +6,8 @@ import play.api.libs.json._
 import play.api.libs.json.JsSuccess
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import scala.io.BufferedSource
+import java.util.regex.{Matcher, Pattern}
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * @author sameer
@@ -44,6 +46,22 @@ object FileUtil {
     new PrintWriter(
       if (gzip) new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(fname)), "UTF-8")
       else new FileWriter(fname))
+
+  val unicodePattern = Pattern.compile("\\$....")
+
+  def extractWikiTitle(title: String): String = {
+    val str = title.drop(1).dropRight(1)
+    val matcher = unicodePattern.matcher(str)
+    val patterns = new ArrayBuffer[String]
+    while (matcher.find()) {
+      patterns += matcher.group().drop(1)
+    }
+    patterns
+      .map(s => s -> new String(Character.toChars(Integer.parseInt(s, 16))))
+      .foldLeft(str)((str, pc) => {
+      str.replaceAll("\\$" + pc._1, Matcher.quoteReplacement(pc._2))
+    })
+  }
 }
 
 object JsonUtil {
