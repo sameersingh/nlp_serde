@@ -5,6 +5,7 @@ import edu.jhu.agiga.{AgigaDocument, AgigaPrefs, StreamingDocumentReader}
 import scala.collection.JavaConversions._
 import scala.Some
 import org.sameersingh.nlp_serde.immutable.Dep
+import java.io.{StringWriter, Writer}
 
 /**
  * @author sameer
@@ -12,18 +13,24 @@ import org.sameersingh.nlp_serde.immutable.Dep
  */
 class AgigaReader extends DocsPerFile {
 
+  private def writerToString(f: Writer => Unit): String = {
+    val s = new StringWriter()
+    f(s)
+    s.toString
+  }
+
   def convert(doc: AgigaDocument, fname: String): Document = {
     val d = new Document()
     d.id = doc.getDocId
     d.path = Some(fname)
     d.attrs("TYPE") = doc.getType
-    d.attrs("PREFS") = doc.getPrefs.toString
+    d.attrs("PREFS_HASH") = doc.getPrefs.hashCode().toString
     //sentences
     for (sen <- doc.getSents) {
       val s = new Sentence()
       s.idx = sen.getSentIdx + 1
-      s.text = "..." // TODO
-      s.chars = sen.getTokens.head.getCharOffBegin -> sen.getTokens.head.getCharOffEnd
+      s.text = writerToString(sen.writeWords)
+      s.chars = sen.getTokens.head.getCharOffBegin -> sen.getTokens.last.getCharOffEnd
       s.depTree = Some(sen.getBasicDeps.map(td => Dep(td.getType, td.getDepIdx + 1, td.getGovIdx + 1))) // TODO: check
       s.parseTree = Some(sen.getParseText)
 
@@ -31,7 +38,7 @@ class AgigaReader extends DocsPerFile {
         val t = new Token()
         t.idx = tok.getTokIdx + 1
         t.text = tok.getWord
-        t.chars = tok.getCharOffBegin -> tok.getCharOffEnd
+        t.chars = (tok.getCharOffBegin - sen.getTokens.head.getCharOffBegin) -> (tok.getCharOffEnd - sen.getTokens.head.getCharOffBegin)
         t.lemma = Some(tok.getLemma)
         t.ner = Some(tok.getNerTag)
         t.pos = Some(tok.getPosTag)
@@ -40,7 +47,7 @@ class AgigaReader extends DocsPerFile {
 
       d.sentences += s
     }
-    d.text = "..." // TODO
+    d.text = d.sentences.map(_.text).mkString("\n")
     //entities
     var mid = 1
     for (coref <- doc.getCorefs) {
@@ -56,7 +63,7 @@ class AgigaReader extends DocsPerFile {
         m.posInSentence = s.mentions.size
         m.toks = (men.getStartTokenIdx + 1) -> (men.getEndTokenIdx + 1)
         m.entityId = Some(e.id)
-        m.text = s.text.substring(s.tokens(m.toks._1 - 1).chars._1, s.tokens(m.toks._2 - 1).chars._2 + 1) // TODO
+        m.text = (m.toks._1 - 1 until m.toks._2 - 1).map(i => s.tokens(i).text).mkString(" ")
         m.headTokenIdx = men.getHeadTokenIdx + 1
         val h = s.tokens(m.headTokenIdx - 1)
         m.ner = h.ner
@@ -77,5 +84,18 @@ class AgigaReader extends DocsPerFile {
     val prefs = new AgigaPrefs()
     prefs.setAll(true)
     new StreamingDocumentReader(name, prefs).iterator().map(d => convert(d, name))
+  }
+}
+
+object AgigaReader {
+  def main(args: Array[String]) {
+    val dir = if (args.length > 0) args(0) else System.getProperty("user.home") + "/Work/data/agiga/data/";
+    val reader = new AgigaReader
+    var numDocs = 0
+    for (d <- reader.readDir(dir, FileFilters.byExtension(".xml.gz"))) {
+      if(numDocs == 0) println(d.toCase)
+      numDocs += 1
+    }
+    println("Docs read: " + numDocs)
   }
 }
