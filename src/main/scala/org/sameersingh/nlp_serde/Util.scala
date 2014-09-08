@@ -21,6 +21,13 @@ object Util {
     def attrs = _attrs
   }
 
+  def indent(num: Int, str: String): String = {
+    "%s%s" format((0 until num).map(i => "\t").mkString(""), str)
+  }
+
+  def printIndent(num: Int, str: String) {
+    println(indent(num, str))
+  }
 }
 
 object FileFilters {
