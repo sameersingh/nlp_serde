@@ -20,3 +20,7 @@ trait Annotator {
     }).flatten
   }
 }
+
+class AnnotatorPipeline(annots: Seq[Annotator]) extends Annotator {
+  override def process(doc: Document): Document = annots.foldLeft(doc)((d, a) => a.process(d))
+}
