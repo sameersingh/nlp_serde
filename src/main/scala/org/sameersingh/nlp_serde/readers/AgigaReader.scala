@@ -31,7 +31,7 @@ class AgigaReader extends DocsPerFile {
       s.idx = sen.getSentIdx + 1
       s.text = writerToString(sen.writeWords)
       s.chars = sen.getTokens.head.getCharOffBegin -> sen.getTokens.last.getCharOffEnd
-      s.depTree = Some(sen.getBasicDeps.map(td => Dep(td.getType, td.getDepIdx + 1, td.getGovIdx + 1))) // TODO: check
+      s.depTree = Some(sen.getBasicDeps.map(td => Dep(td.getType, td.getGovIdx + 1, td.getDepIdx + 1))) // TODO: check
       s.parseTree = Some(sen.getParseText)
 
       for (tok <- sen.getTokens) {
