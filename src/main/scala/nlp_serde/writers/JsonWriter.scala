@@ -28,7 +28,7 @@ class PerLineJsonWriter(gzip: Boolean = true) extends Writer {
   override def write(name: String, docs: Iterator[Document]) {
     val writer = FileUtil.writer(name, gzip)
     for (doc <- docs)
-      writer.println(Json.prettyPrint(JsonUtil.fromDoc(doc.toCase)))
+      writer.println(Json.stringify(JsonUtil.fromDoc(doc.toCase)))
     writer.flush
     writer.close
   }
