@@ -1,6 +1,6 @@
 package nlp_serde.annotators.relations
 
-import org.sameersingh.nlp_serde.Token
+import nlp_serde.Token
 import nlp_serde.immutable.Dep
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.mutable

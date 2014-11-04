@@ -1,7 +1,7 @@
 package nlp_serde.readers
 
 import nlp_serde.{JsonUtil, FileUtil, Document}
-import org.sameersingh.nlp_serde.nlp_serde.immutable
+import nlp_serde.immutable
 import play.api.libs.json._
 
 /**

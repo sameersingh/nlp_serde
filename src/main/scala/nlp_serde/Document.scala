@@ -1,5 +1,6 @@
 package nlp_serde
 
+import nlp_serde.Util.Attr
 import play.api.libs.json.Json
 
 import scala.collection.mutable.ArrayBuffer

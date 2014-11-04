@@ -1,7 +1,7 @@
 package nlp_serde.writers
 
 import nlp_serde.{JsonUtil, FileUtil, Document}
-import org.sameersingh.nlp_serde.JsonUtil
+import nlp_serde.JsonUtil
 import java.io.PrintWriter
 import play.api.libs.json.Json
 

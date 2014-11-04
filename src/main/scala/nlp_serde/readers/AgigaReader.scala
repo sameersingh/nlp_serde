@@ -1,7 +1,7 @@
 package nlp_serde.readers
 
 import nlp_serde._
-import org.sameersingh.nlp_serde._
+import nlp_serde._
 import edu.jhu.agiga.{AgigaDocument, AgigaPrefs, StreamingDocumentReader}
 import scala.collection.JavaConversions._
 import scala.Some

@@ -1,6 +1,7 @@
 package nlp_serde
 
-import org.sameersingh.nlp_serde.immutable.Dep
+import nlp_serde.Util.Attr
+import nlp_serde.immutable.Dep
 
 import scala.collection.mutable.ArrayBuffer
 

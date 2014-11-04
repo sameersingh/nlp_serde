@@ -1,5 +1,7 @@
 package nlp_serde
 
+import nlp_serde.Util.Attr
+
 /**
  * @author sameer
  * @since 9/1/14.

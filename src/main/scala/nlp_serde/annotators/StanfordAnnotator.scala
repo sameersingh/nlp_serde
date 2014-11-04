@@ -8,7 +8,6 @@ import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation
 import nlp_serde._
-import org.sameersingh.nlp_serde._
 import scala.collection.JavaConversions._
 import edu.stanford.nlp.semgraph.SemanticGraph
 import nlp_serde.immutable.Dep

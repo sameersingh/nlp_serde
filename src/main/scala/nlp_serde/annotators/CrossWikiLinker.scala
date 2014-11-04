@@ -1,7 +1,7 @@
 package nlp_serde.annotators
 
 import nlp_serde.{FileUtil, Document}
-import org.sameersingh.nlp_serde.FileUtil
+import nlp_serde.FileUtil
 import scala.collection.mutable.{HashMap, HashSet}
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 import java.io.{InputStreamReader, BufferedReader, FileInputStream}

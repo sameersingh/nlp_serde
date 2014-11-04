@@ -1,7 +1,7 @@
 package nlp_serde.annotators.relations
 
 import nlp_serde.annotators.Annotator
-import org.sameersingh.nlp_serde._
+import nlp_serde._
 import nlp_serde._
 import edu.stanford.nlp.dcoref.Dictionaries.MentionType
 import scala.Some

@@ -1,7 +1,7 @@
 package nlp_serde.readers
 
 import nlp_serde.{FileFilters, Document}
-import org.sameersingh.nlp_serde.FileFilters
+import nlp_serde.FileFilters
 import java.io.{File, FilenameFilter}
 
 /**

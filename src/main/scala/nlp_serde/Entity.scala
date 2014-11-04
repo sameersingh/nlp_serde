@@ -1,5 +1,7 @@
 package nlp_serde
 
+import nlp_serde.Util.Attr
+
 import scala.collection.mutable
 
 /**

@@ -78,7 +78,7 @@ object FileUtil {
 }
 
 object JsonUtil {
-
+  import nlp_serde.immutable._
   val intPairWrites: Writes[(Int, Int)] = new Writes[(Int, Int)] {
     override def writes(o: (Int, Int)): JsValue = {
       Json.toJson(Seq(o._1, o._2))
