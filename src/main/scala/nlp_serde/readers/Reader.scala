@@ -24,7 +24,6 @@ trait DocsPerFile extends Reader {
     val file = new File(dir)
     assert(file.exists(), "%s must exist." format (file.getCanonicalPath))
     assert(file.isDirectory, "%s must be a directory." format (file.getCanonicalPath))
-
     (for (f <- file.listFiles(filter).toIterator) yield {
       read(f.getCanonicalPath)
     }).flatten
@@ -33,7 +32,7 @@ trait DocsPerFile extends Reader {
 
 // exactly one document per file
 trait DocPerFile extends DocsPerFile {
-  def readDoc(name: String): Document
 
-  override def read(name: String): Iterator[Document] = Iterator(readDoc(name))
+  def readDoc(name: String): Option[Document]
+  override def read(name: String): Iterator[Document] = readDoc(name).toIterator
 }

@@ -10,10 +10,10 @@ import play.api.libs.json._
  * @since 9/1/14.
  */
 class JsonReader(gzip: Boolean = true) extends Reader with DocPerFile {
-  override def readDoc(name: String): Document = {
+  override def readDoc(name: String): Option[Document] = {
     val source = FileUtil.inputSource(name, gzip)
     val json = source.getLines().mkString("\n")
-    new Document(JsonUtil.toDoc(json))
+    Some(new Document(JsonUtil.toDoc(json)))
   }
 }
 
