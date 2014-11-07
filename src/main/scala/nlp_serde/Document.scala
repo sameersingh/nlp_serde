@@ -23,6 +23,7 @@ class Document extends Attr {
     path = d.path
     sentences ++= d.sentences.map(s => new Sentence(s))
     entities ++= d.entities.map(e => new Entity(e))
+    attrs ++= d.attrs
   }
 
   override def toString: String = Json.prettyPrint(JsonUtil.fromDoc(toCase))
