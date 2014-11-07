@@ -22,6 +22,7 @@ class Entity extends Attr {
     this()
     id = d.id
     representativeMId = d.representativeMId
+    representativeString = d.representativeString
     mids ++= d.mids
     freebaseIds ++= d.freebaseIds
     ner = d.ner
