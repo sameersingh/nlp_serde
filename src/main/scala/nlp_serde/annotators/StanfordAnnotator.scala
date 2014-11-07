@@ -25,7 +25,7 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
 
   def depTreeFromSemanticG(graph: SemanticGraph): Seq[Dep] = {
     (graph.getRoots().map(e => Dep("root", 0, e.index()))
-      ++ graph.edgeIterable().map(e => Dep(e.getRelation.toString, e.source.index(), e.target.index()))).toSeq
+      ++ graph.edgeIterable().map(e => Dep(e.getRelation.toString, e.getSource.index(), e.getTarget.index()))).toSeq
   }
 
   override def process(doc: Document): Document = {
