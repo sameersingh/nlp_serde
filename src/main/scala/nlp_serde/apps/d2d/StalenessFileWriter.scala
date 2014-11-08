@@ -44,15 +44,16 @@ class StalenessFileWriter extends Writer {
   def write(writer: PrintWriter, d: Document): Unit = {
     val entries = entityEntries(d)
     for(e <- entries) {
-      writer.println("%s\t%s\t%d" format(e.id, e.toks.map(_.trim).mkString("|"), e.date.getTime))
+      writer.println("%s\t%s\t%s\t%d" format(d.id, e.id, e.toks.map(_.trim).mkString("|"), e.date.getTime))
     }
   }
 }
 
 object StalenessFileWriter {
   def main(args: Array[String]): Unit = {
-    def inputFile = "/home/sameer/data/d2d/demo2015/nov/nigeria_dataset_v04.nlp.json.gz"
-    def outputFile = "/home/sameer/data/d2d/demo2015/nov/nigeria_dataset_v04.staleness.txt"
+    def baseDir = "/Users/sameer/Google Drive/UW/D2D/D2D Nov 14/" //"/home/sameer/data/d2d/demo2015/nov/"
+    def inputFile = baseDir + "nigeria_dataset_v04.nlp.json.gz"
+    def outputFile = baseDir + "nigeria_dataset_v04.staleness.txt"
     val reader = new PerLineJsonReader()
     val docs = reader.read(inputFile)
     val writer = new StalenessFileWriter()
