@@ -6,7 +6,7 @@ import java.util.Date
 
 import nlp_serde.Document
 import nlp_serde.readers.PerLineJsonReader
-import nlp_serde.writers.Writer
+import nlp_serde.writers.{HTMLWriter, Writer}
 
 /**
  * Created by sameer on 11/6/14.
@@ -51,12 +51,21 @@ class StalenessFileWriter extends Writer {
 
 object StalenessFileWriter {
   def main(args: Array[String]): Unit = {
-    def baseDir = "/Users/sameer/Google Drive/UW/D2D/D2D Nov 14/" //"/home/sameer/data/d2d/demo2015/nov/"
-    def inputFile = baseDir + "nigeria_dataset_v04.nlp.json.gz"
-    def outputFile = baseDir + "nigeria_dataset_v04.staleness.txt"
+    val baseDir = "/Users/sameer/Google Drive/UW/D2D/D2D Nov 14/" //"/home/sameer/data/d2d/demo2015/nov/"
+    val inputFile = baseDir + "nigeria_dataset_v04.nlp.json.gz"
+    val outputFile = baseDir + "nigeria_dataset_v04.staleness.txt"
     val reader = new PerLineJsonReader()
     val docs = reader.read(inputFile)
     val writer = new StalenessFileWriter()
     writer.write(outputFile, docs)
+  }
+}
+
+object DocReader {
+  def main(args: Array[String]) {
+    val inputFile = "/home/sameer/data/d2d/demo2015/nov/nigeria_dataset_v04.nlp.cw.json.gz"
+    val outputDir = "/home/sameer/data/d2d/demo2015/nov/html/"
+    val writer = new HTMLWriter
+    writer.write(outputDir, new PerLineJsonReader().read(inputFile))
   }
 }

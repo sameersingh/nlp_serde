@@ -15,6 +15,6 @@ trait DocPerFile extends Writer {
   def writeDoc(name: String, doc: Document): Unit
 
   override def write(name: String, docs: Iterator[Document]) {
-    docs.zipWithIndex.foreach(di => writeDoc(name + "." + di._2, di._1))
+    docs.foreach(d => writeDoc(name, d))
   }
 }
