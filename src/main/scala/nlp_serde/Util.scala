@@ -49,6 +49,8 @@ object FileUtil {
     case "sanatarium" => "/Users/sameer/Work"
   }
 
+  def name(path: String): String = new File(path).getName
+
   def inputSource(fname: String, gzip: Boolean): BufferedSource = {
     io.Source.fromInputStream(
       if (gzip) new GZIPInputStream(new FileInputStream(fname))
@@ -112,7 +114,15 @@ object JsonUtil {
   implicit val docReads = Json.reads[nlp_serde.immutable.Document]
 
   def toDoc(json: String): nlp_serde.immutable.Document = {
-    Json.fromJson[nlp_serde.immutable.Document](Json.parse(json))(docReads).get
+    type Doc = nlp_serde.immutable.Document
+    Json.fromJson[nlp_serde.immutable.Document](Json.parse(json))(docReads) match {
+      case e: JsError => {
+        println(e.errors.map(err => err._1 + ": " + err._2.mkString("\n")).mkString("\n\n"))
+        System.exit(1)
+        null
+      }
+      case r: JsSuccess[Doc] => r.get
+    }
   }
 }
 
