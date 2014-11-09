@@ -2,6 +2,7 @@ package nlp_serde.annotators.relations
 
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.BasicDependenciesAnnotation
 import edu.stanford.nlp.util.CoreMap
+import nlp_serde.writers.PerLineJsonWriter
 import nlp_serde.{Sentence, Mention, Relation, Document}
 import nlp_serde.annotators.{StanfordAnnotator, Annotator}
 import nlp_serde.readers.PerLineJsonReader
@@ -28,7 +29,9 @@ import scala.collection.JavaConversions._
 class MultiRAnnotator(val pathToMultirFiles: String,
                       val fg: FeatureGenerator = new DefaultFeatureGeneratorMinusDirMinusDep,
                       val ai: ArgumentIdentification = NERArgumentIdentification.getInstance,
-                      val sig: SententialInstanceGeneration = DefaultSententialInstanceGeneration.getInstance
+                      val sig: SententialInstanceGeneration = DefaultSententialInstanceGeneration.getInstance,
+                      val arg1Type: String = "PERSON",
+                      val arg2Type: String = "PERSON"
                        ) extends Annotator {
   private var mapping: Mappings = null
   private var model: Model = null
@@ -218,8 +221,9 @@ class MultiRAnnotator(val pathToMultirFiles: String,
 
   override def process(doc: Document): Document = {
     val extractions = new ArrayBuffer[RelationMention]
-
+    print("processing " + doc.id)
     for (s <- doc.sentences) {
+      print(".")
       // sentential instance generation:
       // create an exhaustive list of pairs
       // filter out pairs of non-NE mentions (i.e. the mention has a O tag)
@@ -227,7 +231,8 @@ class MultiRAnnotator(val pathToMultirFiles: String,
       // filter out pairs of mentions whose entity ids are the same if present
       val nes = s.mentions.filter(m => isNE(m, s))
       val pairs = nes.map(x => nes.map(y => (x, y))).flatten
-      val sigs = pairs.filter(p => p._1 != p._2 && p._1.entityId.getOrElse(-1) != p._2.entityId.getOrElse(-2))
+      val sigs = pairs.filter(p => p._1 != p._2 && p._1.entityId.getOrElse(-1) != p._2.entityId.getOrElse(-2)
+        && p._1.ner.getOrElse("") == arg1Type && p._2.ner.getOrElse("") == arg2Type)
       for (p <- sigs) {
         val arg1: nlp_serde.Mention = p._1
         val arg2: nlp_serde.Mention = p._2
@@ -239,9 +244,9 @@ class MultiRAnnotator(val pathToMultirFiles: String,
         if (result != null) {
           val relationScoreTriple: Triple[String, Double, Double] = result._1
           if (relationScoreTriple._1 != "NA") {
-            println("arg1:" + arg1.toCase)
-            println("arg2:" + arg2.toCase)
-            println("sent:" + s.tokens.size)
+            //            println("arg1:" + arg1.toCase)
+            //            println("arg2:" + arg2.toCase)
+            //            println("sent:" + s.tokens.size)
             extractions.add(RelationMention(new Argument(arg1.text, s.tokens(arg1.toks._1 - 1).chars._1, s.tokens(arg1.toks._2 - 1 - 1).chars._2),
               new Argument(arg2.text, s.tokens(arg2.toks._1 - 1).chars._1, s.tokens(arg2.toks._2 - 1 - 1).chars._2),
               relationScoreTriple._1, relationScoreTriple._3, s.text))
@@ -259,6 +264,7 @@ class MultiRAnnotator(val pathToMultirFiles: String,
       val score: Double = e.score
       System.out.println(extrString + "\t" + score)
     }
+    println()
     doc
   }
 }
@@ -321,18 +327,35 @@ object SerdeDefaultMultiRFeatureGeneratorMinusDirMinusDep {
 }
 
 object TestMultiRAnnotator extends App {
-  val modelPath = ConfigFactory.load().getString("nlp.multir.modelPath")
-  println(modelPath)
-  val multir = new MultiRAnnotator(modelPath)
+  args.foreach(println)
 
-  val d = new Document()
-  d.id = "test"
-  d.text = "Barack, the US president, is married to Michelle"
-  val annotator: StanfordAnnotator = new StanfordAnnotator(collapsed = false)
-  val nlpDoc = annotator.process(d)
-  println(multir.process(d))
-  println("==================================")
-  println(multir.extractFromText("Barack, the US president, is married to Michelle.").mkString("\n"))
+  val inputFile = args(2)
+  val outputFile = args(3)
+
+
+  val shortNames = Map("PERSON" -> "PER", "ORGANIZATION" -> "ORG", "LOCATION" -> "LOC", "MISC" -> "OTHER")
+  val arg1Type = args(0)
+  val arg2Type = args(1)
+
+  val modelPath = ConfigFactory.load().getString("nlp.multir.modelPath") + "-" + shortNames(arg1Type) + shortNames(arg2Type) + "/"
+  println(modelPath)
+  val multir = new MultiRAnnotator(modelPath, arg1Type=arg1Type, arg2Type=arg2Type)
+
+  val reader = new PerLineJsonReader(true)
+  val docs = reader.read(inputFile)
+  val nlpDocs = multir.process(docs)
+  //  nlpDocs.foreach(println)
+  val writer = new PerLineJsonWriter(true)
+  writer.write(outputFile, nlpDocs)
+
+  //  val d = new Document()
+  //  d.id = "test"
+  //  d.text = "Barack, the US president, is married to Michelle"
+  //  val annotator: StanfordAnnotator = new StanfordAnnotator(collapsed = false)
+  //  val nlpDoc = annotator.process(d)
+  //  println(multir.process(d))
+  //  println("==================================")
+  //  println(multir.extractFromText("Barack, the US president, is married to Michelle.").mkString("\n"))
   //  Mahira gave Yakib the phone number of her fiancé, Safi Sultaan.
 
   //  val reader = new PerLineJsonReader()
