@@ -16,6 +16,8 @@ class Document extends Attr {
   val sentences: ArrayBuffer[Sentence] = new ArrayBuffer
   val entities: ArrayBuffer[Entity] = new ArrayBuffer
 
+  def mentions = sentences.flatMap(_.mentions.map(m => (m.id -> m))).toMap
+
   def this(d: nlp_serde.immutable.Document) = {
     this()
     id = d.id
