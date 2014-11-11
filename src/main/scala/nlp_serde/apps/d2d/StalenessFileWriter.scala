@@ -8,6 +8,8 @@ import nlp_serde.{Entity, Document}
 import nlp_serde.readers.PerLineJsonReader
 import nlp_serde.writers.{HTMLWriter, Writer}
 
+import scala.collection.mutable
+
 /**
  * Created by sameer on 11/6/14.
  */
@@ -44,9 +46,38 @@ class StalenessFileWriter extends Writer {
     })
   }
 
+  def relationEntries(d: Document): Seq[Entry] = {
+    if (!d.attrs.contains("date")) return Seq.empty
+    val f = new SimpleDateFormat("yyyy-MM-dd")
+    val date = f.parse(d.attrs("date"))
+    val map = new mutable.HashMap[String, Entry]
+    for (s <- d.sentences; r <- s.relations) {
+      val m1 = s.mentions.find(_.id == r.m1Id).get
+      val m2 = s.mentions.find(_.id == r.m2Id).get
+      val e1 = d.entities.find(_.id == m1.entityId.get).get
+      val e2 = d.entities.find(_.id == m2.entityId.get).get
+      for (e1id <- entityId(e1); e2id <- entityId(e2)) {
+        val rid = if (e1id < e2id) e1id + "|" + e2id else e2id + "|" + e1id
+        val toks = s.tokens.filter(t => {
+          val pos = t.pos.getOrElse("O")
+          (pos.startsWith("N") || pos.startsWith("V")) && !pos.startsWith("NNP")
+        }).map(t => t.lemma.getOrElse(t.text))
+        val entry = map.getOrElse(rid, Entry(rid, Set.empty, date))
+        map(rid) = Entry(rid, entry.toks ++ toks, date)
+      }
+    }
+    map.values.toSeq
+  }
+
   def write(writer: PrintWriter, d: Document): Unit = {
     val entries = entityEntries(d)
+    println("Number of entities: " + entries.size)
     for (e <- entries) {
+      writer.println("%s\t%s\t%s\t%d" format(d.id, e.id, e.toks.map(_.trim).mkString("|"), e.date.getTime))
+    }
+    val relEntries = relationEntries(d)
+    println("Number of relations: " + entries.size)
+    for (e <- relEntries) {
       writer.println("%s\t%s\t%s\t%d" format(d.id, e.id, e.toks.map(_.trim).mkString("|"), e.date.getTime))
     }
   }
@@ -55,7 +86,7 @@ class StalenessFileWriter extends Writer {
 object StalenessFileWriter {
   def main(args: Array[String]): Unit = {
     val baseDir = "/Users/sameer/Google Drive/UW/D2D/D2D Nov 14/" //"/home/sameer/data/d2d/demo2015/nov/"
-    val inputFile = baseDir + "nigeria_dataset_v04.nlp.lr.json.gz"
+    val inputFile = baseDir + "nigeria_dataset_v04.nlp.lrf.json.gz"
     val outputFile = baseDir + "nigeria_dataset_v04.staleness.txt"
     val reader = new PerLineJsonReader()
     val docs = reader.read(inputFile)
