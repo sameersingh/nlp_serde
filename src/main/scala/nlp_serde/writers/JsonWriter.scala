@@ -12,7 +12,7 @@ import play.api.libs.json.Json
  */
 class JsonWriter(gzip: Boolean = true) extends Writer with DocPerFile {
   override def writeDoc(name: String, doc: Document) {
-    val writer = FileUtil.writer(name, gzip)
+    val writer = FileUtil.writer(name + ".json" + (if(gzip) ".gz" else ""), gzip)
     writer.println(Json.prettyPrint(JsonUtil.fromDoc(doc.toCase)))
     writer.flush
     writer.close
