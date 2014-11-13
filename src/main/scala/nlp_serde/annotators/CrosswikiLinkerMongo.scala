@@ -6,7 +6,7 @@ import com.mongodb.{BasicDBObject, MongoClient, DB, DBCollection}
 import edu.washington.cs.figer.analysis.MapType
 import nlp_serde.readers.PerLineJsonReader
 import nlp_serde.writers.PerLineJsonWriter
-import nlp_serde.{Sentence, Mention, Document}
+import nlp_serde.{Entity, Sentence, Mention, Document}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
@@ -36,6 +36,11 @@ class CrosswikiLinkerMongo(dbHost: String, dbPort: Int = 27017, dbName: String, 
     case e: Exception => e.printStackTrace()
   }
 
+  /**
+   * normalize the string for crosswikis query
+   * @param string
+   * @return
+   */
   def getLnrm(string: String): String = {
     var lnrm = Normalizer.normalize(string, Normalizer.Form.NFD)
     lnrm = lnrm.replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
@@ -44,11 +49,12 @@ class CrosswikiLinkerMongo(dbHost: String, dbPort: Int = 27017, dbName: String, 
     lnrm
   }
 
+  val sortByQuery = new BasicDBObject("cprob", -1)
+
   def getCandidates(mention: Mention): Map[String, Double] = {
     val candidates = new ArrayBuffer[(Int, Double)]
     val lrnm = getLnrm(mention.text)
-    //    println("lrnm=" + lrnm)
-    val cursor = xwikisColl.find(new BasicDBObject("anchor", lrnm))
+    val cursor = xwikisColl.find(new BasicDBObject("anchor", lrnm))//.sort(sortByQuery).limit(numCandidates * 2)
     while (cursor.hasNext) {
       val cand = cursor.next()
       val wpid = getWpidFromTitle(cand.get("entity").asInstanceOf[String])
@@ -59,15 +65,14 @@ class CrosswikiLinkerMongo(dbHost: String, dbPort: Int = 27017, dbName: String, 
     }
     val finalCandidates = candidates.groupBy(_._1).map(x => (x._1, x._2.map(_._2).sum)).toSeq.sortBy(-_._2).toSeq.take(numCandidates).toMap
     if (useFiger) {
+      // if figer is involved, fetch the candidates' entity types and reranking the candidates based on the mention's figer predictions
+      // TODO if the mention is newly created, the figer predictions need to generated on-the-fly
       val figerTypesProbs: Map[String, Double] = getFigerTypesProbs(mention)
-      //      println(figerTypesProbs)
       if (figerTypesProbs.isEmpty) {
         finalCandidates.map(c => (getFreebaseIdFromWpid(c._1), c._2)).filter(c => c._1 != null)
       } else {
         val candTypes: Map[Int, Set[String]] = getCandidateTypes(finalCandidates.map(_._1).toSeq)
-        //      println(candTypes)
         val typeSumProbs: Map[String, Double] = figerTypesProbs.map(p => (p._1, candTypes.map(c => if (c._2.contains(p._1)) finalCandidates(c._1) else 0).sum)).toMap
-        //      println(typeSumProbs)
         val adjustedCandidates = finalCandidates.map(c => {
           val types = candTypes(c._1)
           val prior = c._2
@@ -114,8 +119,16 @@ class CrosswikiLinkerMongo(dbHost: String, dbPort: Int = 27017, dbName: String, 
     }
   }
 
+  val neClasses = scala.collection.immutable.HashSet("LOCATION", "PERSON", "ORGANIZATION", "MISC")
+
+  /**
+   * A P/L/O/M mention with all tokens in the same ner type
+   * @param m
+   * @param s
+   * @return
+   */
   def isNE(m: Mention, s: Sentence): Boolean = {
-    !s.tokens.subList(m.toks._1 - 1, m.toks._2 - 1).exists(t => t.ner.getOrElse("") == "O")
+    m.mentionType.getOrElse("") == "PROPER" && !s.tokens.subList(m.toks._1 - 1, m.toks._2 - 1).exists(t => t.ner.getOrElse("") == "O") && neClasses.contains(m.ner.getOrElse(""))
   }
 
   override def process(doc: Document): Document = {
@@ -124,33 +137,46 @@ class CrosswikiLinkerMongo(dbHost: String, dbPort: Int = 27017, dbName: String, 
       e.freebaseIds.clear()
       print(".")
       // find the best name for linking
-      //      println(e.toCase.toString)
-      //      println("rep = "+e.representativeString+","+e.representativeMId)
-      //      println(doc.mentions(e.representativeMId).toCase)
-      var string = e.representativeString
-
       var repMention: Mention = null
       var realMention: Mention = null
       val sent = doc.sentences.find(s => s.mentions.exists(m => if (m.id == e.representativeMId) {
         repMention = m
-        string = repMention.text
-        //        println("string="+string)
         true
       } else false))
 
       realMention = repMention
       //      println("sent="+sent.get.toCase.toString)
       var needLink = false
-
       sent match {
         case Some(s) => needLink = isNE(repMention, s);
-          for (m <- s.mentions) {
-            if (repMention != m && m.toks._1 >= repMention.toks._1 && m.toks._2 <= repMention.toks._2 && isNE(m, s)) {
-              // found a better mention for linking
-              println("replace the string (" + string + ") by " + m.text)
-              string = m.text
-              realMention = m
-              needLink = true
+          if (!needLink && repMention.mentionType.getOrElse("") == "PROPER" && neClasses.contains(repMention.ner.getOrElse(""))) {
+            for (m <- s.mentions) {
+              if (repMention != m && e.id == m.entityId.getOrElse(-1) && m.toks._1 >= repMention.toks._1 && m.toks._2 <= repMention.toks._2 && isNE(m, s)) {
+                // found a better mention for linking
+                println("replace the string (" + repMention.text + ") by " + m.text)
+                realMention = m
+                needLink = true
+              }
+            }
+            // if still no luck with a reasonable mention, consider create a submention spanning from the head
+            if (!needLink) {
+              //        if (repMention.mentionType.getOrElse("") == "PROPER") {
+              //          // meaning that we can't find a submention that is purely a named entity
+              //          // use other mentions in the same cluster
+              //          //          val otherMention = getOtherMention(doc, e)
+              //          // get a sub mention which matches the type
+              //          val otherMention = getSubMention(doc, e, repMention)
+              //          if (otherMention != null) {
+              //            realMention = otherMention
+              //            needLink = true
+              //          }
+              //        }
+              val otherMention = getSubMention(doc, s, repMention)
+              if (otherMention != null) {
+                println("replace the string (" + repMention + ") by a submention " + otherMention.text)
+                realMention = otherMention
+                needLink = true
+              }
             }
           }
         case None => println("repMention not found in any sentence, mention=" + e.representativeMId + ", entity=" + e.id + ", doc=" + doc.id)
@@ -166,6 +192,54 @@ class CrosswikiLinkerMongo(dbHost: String, dbPort: Int = 27017, dbName: String, 
     }
     println()
     doc
+  }
+
+  def getSubMention(doc: Document, s: Sentence, repMention: Mention): Mention = {
+    val nerType = repMention.ner.get
+    if (s.tokens(repMention.headTokenIdx - 1).ner.getOrElse("") == nerType) {
+      //      repMention.s.tokens.subList(m.toks._1 - 1, m.toks._2 - 1)
+      val left = ((repMention.toks._1 - 1) until (repMention.headTokenIdx)).filter(i => s.tokens(i).ner.getOrElse("") == nerType).min
+      val right = ((repMention.headTokenIdx - 1) until (repMention.toks._2 - 1)).filter(i => s.tokens(i).ner.getOrElse("") == nerType).max
+      val m = new Mention()
+      m.entityId = repMention.entityId
+      m.headTokenIdx = repMention.headTokenIdx
+      m.mentionType = repMention.mentionType
+      m.ner = repMention.ner
+      m.toks = (left + 1, right + 2)
+      m.sentenceId = repMention.sentenceId
+      m.text = (m.toks._1 - 1 until m.toks._2 - 1).map(i => s.tokens(i).text).mkString(" ")
+      m
+    } else {
+      null
+    }
+  }
+
+  /**
+   * An alternative approach to finding a mention for linking from the coref cluster
+   * @param doc
+   * @param e
+   * @return
+   */
+  def getOtherMention(doc: Document, e: Entity): Mention = {
+    val mentions = doc.mentions
+    for (m <- e.mids.toSeq.sorted) {
+      if (e.representativeMId != m) {
+        val men = mentions(m)
+        val msent = doc.sentences.find(s => s.mentions.exists(mm => if (mm.id == m) {
+          //                repMention = m
+          //                  string = repMention.text
+          true
+        } else false))
+        msent match {
+          case Some(s) =>
+            if (men.mentionType.getOrElse("") == "PROPER" && isNE(men, s)) {
+              return men
+            }
+          case None => println("repMention not found in any sentence, mention=" + e.representativeMId + ", entity=" + e.id + ", doc=" + doc.id)
+        }
+      }
+    }
+    return null
   }
 
   def getCandidateTypes(candidates: Seq[Int]): Map[Int, Set[String]] = {
@@ -232,7 +306,7 @@ object RunCrosswikisLinkerForD2D {
     val reader = new PerLineJsonReader(true)
     val docs = reader.read("nigeria_dataset_v04.nlp.lrf.json.gz")
     val nlpDocs = linker.process(docs)
-    nlpDocs.foreach(println)
+    //    nlpDocs.foreach(println)
     val writer = new PerLineJsonWriter(true)
     writer.write("nigeria_dataset_v04.nlp.lrfl.json.gz", nlpDocs)
   }
