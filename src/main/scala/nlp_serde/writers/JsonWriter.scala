@@ -1,5 +1,6 @@
 package nlp_serde.writers
 
+import nlp_serde.readers.PerLineJsonReader
 import nlp_serde.{JsonUtil, FileUtil, Document}
 import nlp_serde.JsonUtil
 import java.io.PrintWriter
@@ -31,5 +32,27 @@ class PerLineJsonWriter(gzip: Boolean = true) extends Writer {
       writer.println(Json.stringify(JsonUtil.fromDoc(doc.toCase)))
     writer.flush
     writer.close
+  }
+}
+
+object MergeLinkingAndRelation {
+  def main(args: Array[String]) = {
+    val reader = new PerLineJsonReader(true)
+    val cwFile = "nigeria_dataset_v04.nlp.cw.json.fixed.gz"
+    val relFile = "nigeria_dataset_v04.nlp.multir_partitioned.json.gz"
+    val cwDocMap = reader.read(cwFile).map(doc => (doc.id -> doc)).toMap
+    val relDocMap = reader.read(relFile).map(doc => (doc.id -> doc)).toMap
+    for ((id, cwDoc) <- cwDocMap) {
+      val relDoc = relDocMap(id)
+      for ((e,f) <- relDoc.entities.zip(cwDoc.entities)) {
+        if (e.id != f.id) {
+          println("e!=f")
+        }
+        e.freebaseIds ++= f.freebaseIds
+      }
+    }
+    val writer = new PerLineJsonWriter(true)
+    val outFile = "nigeria_dataset_v04.nlp.lr.json.gz"
+    writer.write(outFile, relDocMap.values.toIterator)
   }
 }

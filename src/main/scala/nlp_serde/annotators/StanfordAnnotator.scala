@@ -3,9 +3,9 @@ package nlp_serde.annotators
 import edu.stanford.nlp.pipeline.{Annotation, StanfordCoreNLP}
 import java.util.Properties
 import edu.stanford.nlp.ling.CoreAnnotations._
-import edu.stanford.nlp.ling.CoreLabel
+import edu.stanford.nlp.ling.{CoreAnnotation, CoreLabel}
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation
-import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation
+import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.{BasicDependenciesAnnotation, CollapsedCCProcessedDependenciesAnnotation}
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation
 import nlp_serde._
 import scala.collection.JavaConversions._
@@ -16,7 +16,7 @@ import nlp_serde.immutable.Dep
  * @author sameer
  * @since 9/1/14.
  */
-class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse", "dcoref"))
+class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse", "dcoref"), val collapsed:Boolean = true)
   extends Annotator {
   // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and coreference resolution
   val props = new Properties()
@@ -57,7 +57,12 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       val tree = sentence.get(classOf[TreeAnnotation])
       s.parseTree = Some(tree.toString)
       // this is the Stanford dependency graph of the current sentence
-      val dependencies = sentence.get(classOf[CollapsedCCProcessedDependenciesAnnotation])
+      val dependencies = {
+        if (collapsed)
+          sentence.get(classOf[CollapsedCCProcessedDependenciesAnnotation])
+        else
+          sentence.get(classOf[BasicDependenciesAnnotation])
+      }
       s.depTree = Some(depTreeFromSemanticG(dependencies))
       doc.sentences += s
     }
