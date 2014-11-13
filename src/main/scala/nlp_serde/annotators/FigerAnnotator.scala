@@ -19,6 +19,14 @@ import java.util.zip.GZIPInputStream
 import java.util.regex.Pattern
 
 /**
+ * Need to install FIGER locally first
+ * mvn install:install-file \
+-Dfile=figer.jar \
+-DgroupId=figer \
+-DartifactId=figer \
+-Dversion=0 \
+-Dpackaging=jar \
+-DgeneratePom=true
  * Created by xiaoling on 11/8/14.
  */
 class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotator {

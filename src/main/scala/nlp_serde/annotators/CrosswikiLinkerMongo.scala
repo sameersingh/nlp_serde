@@ -12,6 +12,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
 
 /**
+ *
+ * need to launch vinculum mongodb first
  * Created by xiaoling on 11/6/14.
  */
 class CrosswikiLinkerMongo(dbHost: String, dbPort: Int = 27017, dbName: String, numCandidates: Int = 30, useFiger: Boolean = false) extends Annotator {

@@ -24,6 +24,14 @@ import java.io.{File, FileOutputStream, OutputStreamWriter, PrintWriter}
 import scala.collection.JavaConversions._
 
 /**
+ * Need to install Multir locally
+ *mvn install:install-file \
+-Dfile=multirexperiments_2.10-0.1.jar \
+-DgroupId=multirexperiments \
+-DartifactId=multirexperiments \
+-Dversion=0.1 \
+-Dpackaging=jar \
+-DgeneratePom=true
  * Created by xiaoling on 11/4/14.
  */
 class MultiRAnnotator(val pathToMultirFiles: String,
