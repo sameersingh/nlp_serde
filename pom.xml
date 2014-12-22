@@ -53,6 +53,10 @@
             <name>typesafe-snapshots</name>
             <url>http://repo.typesafe.com/typesafe/snapshots/</url>
         </repository>
+        <repository>
+          <id>local-repo</id>
+          <url>file://${basedir}/repo</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -151,7 +155,7 @@
             <!--<type>pom</type>-->
         </dependency>
 
-	<!-- figer -->
+	      <!-- figer -->
         <dependency>
             <groupId>figer</groupId>
             <artifactId>figer</artifactId>
