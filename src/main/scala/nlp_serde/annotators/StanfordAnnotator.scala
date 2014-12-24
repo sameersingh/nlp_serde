@@ -3,11 +3,13 @@ package nlp_serde.annotators
 import edu.stanford.nlp.pipeline.{Annotation, StanfordCoreNLP}
 import java.util.Properties
 import edu.stanford.nlp.ling.CoreAnnotations._
-import edu.stanford.nlp.ling.{CoreAnnotation, CoreLabel}
+import edu.stanford.nlp.ling.CoreLabel
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.{BasicDependenciesAnnotation, CollapsedCCProcessedDependenciesAnnotation}
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation
 import nlp_serde._
+import nlp_serde.readers.PerLineJsonReader
+import nlp_serde.writers.PerLineJsonWriter
 import scala.collection.JavaConversions._
 import edu.stanford.nlp.semgraph.SemanticGraph
 import nlp_serde.immutable.Dep
@@ -98,5 +100,23 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       doc.entities += e
     }
     doc
+  }
+}
+
+object StanfordAnnotator {
+  def main(args: Array[String]): Unit = {
+    if(args.length!= 2) {
+      println("Not enough arguments: input_file.json.gz output_file.json.gz")
+    }
+    val input = args(0)
+    val output = args(1)
+    println("Reading: " + input)
+    val reader = new PerLineJsonReader(true)
+    val docs = reader.read(input)
+    val annotator = new StanfordAnnotator()
+    val nlpDocs = annotator.process(docs)
+    println("Writing: " + output)
+    val writer = new PerLineJsonWriter(true)
+    writer.write(output, nlpDocs)
   }
 }
