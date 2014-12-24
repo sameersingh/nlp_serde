@@ -15,44 +15,65 @@ import java.text.ParseException
  * Created by sameer on 11/3/14.
  */
 class D2DReader extends DocPerFile {
+  private var _id = 0
+
+  def newDocId = {
+    _id += 1
+    "DOC%05d".format(_id - 1)
+  }
+
   override def readDoc(name: String): Option[Document] = {
     val f = new File(name)
-    if (Set("NigeriaTwitterKeyWords",
+    if ((Set("NigeriaTwitterKeyWords",
       "China'sEconomyModerateGrowthTransformationandtheBrightFuture",
       "ConsulGeneralLIUKanInterviewedbyNewsAgencyofNigeria",
-      "SpeechfromChineseConsulGeneralLiuKan") contains f.getName.dropRight(4)) return None
+      "SpeechfromChineseConsulGeneralLiuKan", "BlogbyyusufJune2014", "README") contains f.getName.dropRight(4)) ||
+      f.getCanonicalPath.contains("BokoHaramAbducts60WomenInAdamawa")) return None
     val lines = io.Source.fromFile(f).getLines().map(_.trim).filterNot(_.isEmpty).toSeq.view.force
     val doc = new Document()
-    doc.id = f.getName
-    doc.path = Some(f.getCanonicalPath.replaceAll("/home/sameer/data/d2d/demo2015/nov/", ""))
+    doc.path = Some(f.getCanonicalPath.replaceAll(".*/2015/demo-JIFX_15-2/", ""))
+    doc.id = newDocId //doc.path.get
     val docType = D2DReader.extractType(f)
     doc.attrs("type") = docType.toString
-    val date = D2DReader.extractDate(lines, docType)
-    date.foreach(d => {
-      val f = new SimpleDateFormat("yyyy-MM-dd")
-      doc.attrs("date") = f.format(d)
-    })
-    val title = D2DReader.extractTitle(lines, docType)
-    title.foreach(t => doc.attrs("title") = t)
-    val subtitle = D2DReader.extractSubTitle(lines, docType)
-    subtitle.foreach(t => doc.attrs("subtitle") = t)
-    val text = D2DReader.extractText(lines, docType)
-    text.foreach(t => doc.text = t)
-    if(!doc.attrs.contains("date")) println(doc.toString) else println(f.getName)
+    println(f.getName)
+    try {
+      val title = D2DReader.extractTitle(lines, docType)
+      title.foreach(t => if (t.contains("Page has moved")) return None)
+      title.foreach(t => doc.attrs("title") = t)
+      val subtitle = D2DReader.extractSubTitle(lines, docType)
+      subtitle.foreach(t => doc.attrs("subtitle") = t)
+      val text = D2DReader.extractText(lines, docType)
+      text.foreach(t => doc.text = t)
+      val date = D2DReader.extractDate(lines, docType, f.getName)
+      date.foreach(d => {
+        val f = new SimpleDateFormat("yyyy-MM-dd")
+        doc.attrs("date") = f.format(d)
+      })
+      if (!doc.attrs.contains("date")) {
+        println(doc.toString)
+        System.exit(1)
+      }
+    } catch {
+      case e: Exception => {
+        println("Error in reading: " + f.getCanonicalPath)
+        e.printStackTrace()
+        System.exit(1)
+      }
+    }
     Some(doc)
   }
 
   def readAll(baseDir: String) = {
     readDir(baseDir + "/ali-baba/", FileFilters.byExtension("txt")) ++
-    readDir(baseDir + "/from-randy/", FileFilters.byExtension("txt")) ++
-    readDir(baseDir + "/from-randy/blogs/", FileFilters.byExtension("txt"))
+      readDir(baseDir + "/from-randy/", FileFilters.byExtension("txt")) ++
+      readDir(baseDir + "/from-randy/blogs/", FileFilters.byExtension("txt"))
   }
 }
 
 object D2DReader {
 
   object DocType extends Enumeration {
-    val news, blog, aliBaba = Value
+    val fromRandy, blog, aliBaba, news = Value
   }
 
   def extractType(f: File): DocType.Value = {
@@ -60,10 +81,11 @@ object D2DReader {
     val parent = f.getParent
     if (name.startsWith("Blog")) return DocType.blog
     if (parent.endsWith("ali-baba")) return DocType.aliBaba
-    if (parent.endsWith("from-randy")) return DocType.news
+    if (parent.contains("from-randy")) return DocType.fromRandy
+    else return DocType.news
     //println(s"name: $name, parent: $parent")
     assert(false, s"Everything should be covered by the above cases, but $name in $parent is not.")
-    DocType.news
+    DocType.fromRandy
   }
 
   def extractTitle(lines: Seq[String], docType: DocType.Value): Option[String] = {
@@ -71,8 +93,14 @@ object D2DReader {
       return Some(lines(0))
     if (docType == DocType.blog)
       return Some(lines(0))
-    if (docType == DocType.news)
+    if (docType == DocType.fromRandy)
       return Some(lines(0))
+    if (docType == DocType.news) {
+      val idx = lines.indexWhere(_.contains("TITLE:"))
+      assert(idx >= 0, "Could not find title in news story!")
+      val titleString = lines(idx + 1)
+      return Some(titleString)
+    }
     None
   }
 
@@ -84,7 +112,6 @@ object D2DReader {
       val pruned = lines(2).split(" ").take(numHeader).mkString(" ").trim
       return Some(pruned)
     }
-    // blog
     None
   }
 
@@ -103,16 +130,21 @@ object D2DReader {
       }
       return Some(lines.drop(1).mkString(" ").trim)
     }
-    if (docType == DocType.news) {
+    if (docType == DocType.fromRandy) {
       if (lines(1).isEmpty || lines(1).charAt(0).isDigit) {
         return Some(lines(0) + ". " + lines.drop(2).mkString(" ").trim)
       }
       return Some(lines(0) + ". " + lines.drop(1).mkString(" ").trim)
     }
+    if (docType == DocType.news) {
+      val idx = lines.indexWhere(_.contains("TEXT:"))
+      assert(idx >= 0, "Could not find text in news story!")
+      return Some(lines.drop(idx + 1).mkString(" ").trim)
+    }
     None
   }
 
-  def extractDate(lines: Seq[String], docType: DocType.Value): Option[Date] = {
+  def extractDate(lines: Seq[String], docType: DocType.Value, fname: String): Option[Date] = {
     if (docType == DocType.aliBaba) {
       val formatter = new SimpleDateFormat("dd-MMM-yy")
       return Some(formatter.parse(lines(1)))
@@ -136,8 +168,8 @@ object D2DReader {
       }
       return None
     }
-    if (docType == DocType.news) {
-      if(lines(1).contains("2014")) {
+    if (docType == DocType.fromRandy) {
+      if (lines(1).contains("2014")) {
         if (lines(1).charAt(0).isDigit) {
           val formatter = new SimpleDateFormat("dd MMMMM yyyy")
           return Some(formatter.parse(lines(1)))
@@ -155,9 +187,9 @@ object D2DReader {
         } catch {
           case e: ParseException => {}
         }
-        if(lines(1).startsWith("BEIJING, ")) {
+        if (lines(1).startsWith("BEIJING, ")) {
           val str = lines(1).replaceAll("BEIJING, ", "")
-          val beijingDate  = str.split(" ").take(3).mkString(" ")
+          val beijingDate = str.split(" ").take(3).mkString(" ")
           try {
             val formatter = new SimpleDateFormat("MMM. dd, yyyy")
             return Some(formatter.parse(beijingDate))
@@ -172,17 +204,78 @@ object D2DReader {
           }
         }
       }
+      if (lines(2).contains("2014")) {
+        val formatter = new SimpleDateFormat("dd MMMMM yyyy")
+        return Some(formatter.parse(lines(2)))
+      }
+    }
+    if (docType == DocType.news) {
+      val idx = lines.indexWhere(_.contains("CITE:"))
+      assert(idx >= 0, "Could not find date in news story!")
+      try {
+        val dateString = lines(idx + 1).split(" ").takeRight(3).mkString(" ")
+        val formatter = new SimpleDateFormat("dd MMMMM yyyy")
+        return Some(formatter.parse(dateString))
+      } catch {
+        case e: ParseException => {}
+      }
+      try {
+        val dateString = lines(idx + 1).split(" ").drop(2).take(3).mkString(" ")
+        val formatter = new SimpleDateFormat("dd MMMMM, yyyy")
+        return Some(formatter.parse(dateString))
+      } catch {
+        case e: ParseException => {}
+      }
+      try {
+        val dateString = lines(idx + 1).split(" ").drop(2).take(3).mkString(" ")
+        val formatter = new SimpleDateFormat("MMMMM dd, yyyy")
+        return Some(formatter.parse(dateString))
+      } catch {
+        case e: ParseException => {}
+      }
+      try {
+        val dateString = lines(idx + 2).trim
+        val formatter = new SimpleDateFormat("dd.MMM.yyyy")
+        return Some(formatter.parse(dateString))
+      } catch {
+        case e: ParseException => {}
+      }
+      try {
+        val dateString = lines(idx + 1).trim
+        val formatter = new SimpleDateFormat("dd.MMM.yyyy")
+        return Some(formatter.parse(dateString))
+      } catch {
+        case e: ParseException => {}
+      }
+      try {
+        val dateString = lines(idx + 2).split(" ").takeRight(4).dropRight(1).mkString(" ")
+        val formatter = new SimpleDateFormat("dd MMMMM yyyy")
+        return Some(formatter.parse(dateString))
+      } catch {
+        case e: ParseException => {}
+      }
+      try {
+        val dateString = fname.take(8)
+        assert(dateString.forall(_.isDigit), "Could not find date in: %s (%s)".format(fname, lines.drop(idx).take(3).mkString("\n")))
+        val formatter = new SimpleDateFormat("yyyyMMdd")
+        return Some(formatter.parse(dateString))
+      } catch {
+        case e: ParseException => {
+          println("Could not find date in: %s (%s)".format(fname, lines.drop(idx).take(3).mkString("\n")))
+          System.exit(1)
+        }
+      }
     }
     None
   }
 
   def main(args: Array[String]): Unit = {
-    val outputFile = "/home/sameer/data/d2d/demo2015/nov/nigeria_dataset_v04.nlp.json.gz"
+    val outputFile = "data/processed/docs.txt.json.gz"
     val reader = new D2DReader
-    val docs = reader.readAll("/home/sameer/data/d2d/demo2015/nov/nigeria_dataset_v04")
-    val annotator = new StanfordAnnotator()
-    val nlpDocs = annotator.process(docs)
+    val docs = reader.readFilelist("data/2015/demo-JIFX_15-2/filelist.names", "data/2015/demo-JIFX_15-2/" + _)
+    //val annotator = new StanfordAnnotator()
+    //val nlpDocs = annotator.process(docs)
     val writer = new PerLineJsonWriter(true)
-    writer.write(outputFile, nlpDocs)
+    writer.write(outputFile, docs)
   }
 }
