@@ -134,16 +134,16 @@
         <!-- MultiR -->
         <dependency>
             <groupId>multirexperiments</groupId>
-            <artifactId>multirexperiments</artifactId>
+            <artifactId>multirexperiments_${scala.tools.version}</artifactId>
             <version>0.1</version>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>edu.washington.cs.knowitall</groupId>
             <artifactId>multir-framework_${scala.tools.version}</artifactId>
             <version>0.3-SNAPSHOT</version>
             <scope>system</scope>
             <systemPath>/homes/gws/xiaoling/.m2/repository/edu/washington/cs/knowitall/multir-framework_2.10/0.3-SNAPSHOT/multir-framework_2.10-0.3-SNAPSHOT.jar</systemPath>
-        </dependency>
+        </dependency-->
 
         <!-- MongoDB -->
         <dependency>
@@ -158,7 +158,7 @@
 	      <!-- figer -->
         <dependency>
             <groupId>figer</groupId>
-            <artifactId>figer</artifactId>
+            <artifactId>figer_${scala.tools.version}</artifactId>
             <version>0</version>
         </dependency>
         <dependency>

@@ -5,7 +5,7 @@ import java.util
 
 import nlp_serde.readers.PerLineJsonReader
 import nlp_serde.writers.PerLineJsonWriter
-import edu.washington.cs.figer.FigerSystem
+//import edu.washington.cs.figer.FigerSystem
 import edu.washington.cs.figer.data.EntityProtos.Mention
 import edu.washington.cs.figer.data.EntityProtos.Mention.Dependency
 import nlp_serde.Document
@@ -30,8 +30,8 @@ import java.util.regex.Pattern
  * Created by xiaoling on 11/8/14.
  */
 class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotator {
-  FigerSystem.modelFile = modelFile
-  lazy val figer: FigerSystem = FigerSystem.instance()
+  //FigerSystem.modelFile = modelFile
+  //lazy val figer: FigerSystem = FigerSystem.instance()
 
   override def process(doc: Document): Document = {
     import scala.collection.JavaConverters._
@@ -48,12 +48,12 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
             .addAllTokens(tokens).addAllPosTags(postags).addAllDeps(figerDeps)
             .setEntityName("").setFileid("").setSentid(s.idx - 1).build()
           val features = new util.ArrayList[String]()
-          figer.nerFeature.extract(figerMention, features)
+          //figer.nerFeature.extract(figerMention, features)
           // remove below threshold labels
-          val pred = figer.predict(features).split("[,\t]").map(str => {
+          val pred = "" /*figer.predict(features).split("[,\t]").map(str => {
             val pair = str.split("@");
             (pair(0), pair(1).toDouble)
-          }).filter(p => p._2 > threshold).map(p=>p._1+"@"+p._2.toString).mkString(",")
+          }).filter(p => p._2 > threshold).map(p=>p._1+"@"+p._2.toString).mkString(",")*/
           m.attrs += ("figer" -> pred)
         }
       }
