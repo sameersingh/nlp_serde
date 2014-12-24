@@ -25,7 +25,7 @@ class AnnotatorPipeline(annots: Seq[Annotator]) extends Annotator {
   override def process(doc: Document): Document = annots.foldLeft(doc)((d, a) => a.process(d))
 }
 
-class MultiThreadedAnnotator[A <: Annotator](threads: Int, newAnnotator: => A) extends Annotator {
+class MultiThreadedAnnotator[A <: Annotator](newAnnotator: => A) extends Annotator {
   val batchSize = 1000
   val annotator = newAnnotator
   override def process(docs: Iterator[Document]): Iterator[Document] = {

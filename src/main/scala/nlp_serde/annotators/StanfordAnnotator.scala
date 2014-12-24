@@ -18,7 +18,7 @@ import nlp_serde.immutable.Dep
  * @author sameer
  * @since 9/1/14.
  */
-class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse", "dcoref"), val collapsed:Boolean = true)
+class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse", "dcoref"), val collapsed: Boolean = true)
   extends Annotator {
   // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and coreference resolution
   val props = new Properties()
@@ -105,7 +105,7 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
 
 object StanfordAnnotator {
   def main(args: Array[String]): Unit = {
-    if(args.length!= 2) {
+    if (args.length != 2) {
       println("Not enough arguments: input_file.json.gz output_file.json.gz")
     }
     val input = args(0)
@@ -113,7 +113,7 @@ object StanfordAnnotator {
     println("Reading: " + input)
     val reader = new PerLineJsonReader(true)
     val docs = reader.read(input)
-    val annotator = new StanfordAnnotator()
+    val annotator = new MultiThreadedAnnotator(new StanfordAnnotator)
     val nlpDocs = annotator.process(docs)
     println("Writing: " + output)
     val writer = new PerLineJsonWriter(true)

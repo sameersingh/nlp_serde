@@ -45,7 +45,7 @@ object NYTReader {
     val nytBase = "/home/sameer/work/data/nyt/nyt/"
     //val nytBase = "/Users/sameer/Work/data/nyt/nyt/"
     val reader = new NYTReader(_.getTaxonomicClassifiers.forall(!_.contains("Top/Classifieds")))
-    val docs = reader.readFilelist(nytBase + "docs/files.tbl", l => nytBase + "data" + l.drop(3))
+    val docs = reader.readFilelist(nytBase + "docs/file.tbl", l => nytBase + "data" + l.drop(3))
     val writer = new PerLineJsonWriter(true)
     writer.write(nytBase + "../nyt.txt.json.gz", docs)
     println(reader.classes.toSeq.sortBy(_._2).map(p => p._1 + "\t" + p._2).mkString("\n"))
