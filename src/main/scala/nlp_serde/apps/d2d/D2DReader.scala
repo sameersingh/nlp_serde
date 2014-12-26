@@ -270,7 +270,7 @@ object D2DReader {
   }
 
   def main(args: Array[String]): Unit = {
-    val outputFile = "data/processed/docs.txt.json.gz"
+    val outputFile = "data/d2d/docs.txt.json.gz"
     val reader = new D2DReader
     val docs = reader.readFilelist("data/2015/demo-JIFX_15-2/filelist.names", "data/2015/demo-JIFX_15-2/" + _)
     //val annotator = new StanfordAnnotator()
