@@ -5,7 +5,7 @@ import java.util
 
 import nlp_serde.readers.PerLineJsonReader
 import nlp_serde.writers.PerLineJsonWriter
-//import edu.washington.cs.figer.FigerSystem
+import edu.washington.cs.figer.FigerSystem
 import edu.washington.cs.figer.data.EntityProtos.Mention
 import edu.washington.cs.figer.data.EntityProtos.Mention.Dependency
 import nlp_serde.Document
@@ -30,8 +30,8 @@ import java.util.regex.Pattern
  * Created by xiaoling on 11/8/14.
  */
 class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotator {
-  //FigerSystem.modelFile = modelFile
-  //lazy val figer: FigerSystem = FigerSystem.instance()
+  FigerSystem.modelFile = modelFile
+  lazy val figer: FigerSystem = FigerSystem.instance()
 
   override def process(doc: Document): Document = {
     import scala.collection.JavaConverters._
@@ -48,12 +48,12 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
             .addAllTokens(tokens).addAllPosTags(postags).addAllDeps(figerDeps)
             .setEntityName("").setFileid("").setSentid(s.idx - 1).build()
           val features = new util.ArrayList[String]()
-          //figer.nerFeature.extract(figerMention, features)
+          figer.nerFeature.extract(figerMention, features)
           // remove below threshold labels
-          val pred = "" /*figer.predict(features).split("[,\t]").map(str => {
+          val pred = figer.predict(features).split("[,\t]").map(str => {
             val pair = str.split("@");
             (pair(0), pair(1).toDouble)
-          }).filter(p => p._2 > threshold).map(p=>p._1+"@"+p._2.toString).mkString(",")*/
+          }).filter(p => p._2 > threshold).map(p=>p._1+"@"+p._2.toString).mkString(",")
           m.attrs += ("figer" -> pred)
         }
       }
@@ -65,13 +65,17 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
 
 object FigerAnnotator {
   def main(args: Array[String]) {
-    val modelFile = if (args.size > 0) args(0) else "../figer/test.model.gz"
+    val modelFile = if (args.size > 0) args(0) else "figer.model.gz"
+    val input = args(1) // "nigeria_dataset_v04.nlp.lr.json.gz"
+    val output = args(2) //"nigeria_dataset_v04.nlp.lrf.json.gz"
     val stanf = new StanfordAnnotator()
     val figer = new FigerAnnotator(modelFile)
     val reader = new PerLineJsonReader(true)
-    val docs = figer.process(reader.read("nigeria_dataset_v04.nlp.lr.json.gz"))
+
+    val docs = figer.process(reader.read(input))
     val writer = new PerLineJsonWriter(true)
-    writer.write("nigeria_dataset_v04.nlp.lrf.json.gz", docs)
+
+    writer.write(output, docs)
 
 //    val d = new Document()
 //    d.id = "doc001"
