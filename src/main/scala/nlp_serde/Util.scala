@@ -117,6 +117,7 @@ object JsonUtil {
     type Doc = nlp_serde.immutable.Document
     Json.fromJson[nlp_serde.immutable.Document](Json.parse(json))(docReads) match {
       case e: JsError => {
+        println("Json: " + Json.prettyPrint(Json.parse(json)))
         println(e.errors.map(err => err._1 + ": " + err._2.mkString("\n")).mkString("\n\n"))
         System.exit(1)
         null
