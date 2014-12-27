@@ -69,35 +69,37 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       doc.sentences += s
     }
 
-    val graph = document.get(classOf[CorefChainAnnotation])
-    for ((id, chain) <- graph) {
-      val e = new Entity()
-      e.id = id.toInt
-      val rep = chain.getRepresentativeMention
-      for (mention <- chain.getMentionsInTextualOrder) {
-        val m = new Mention()
-        m.entityId = Some(e.id)
-        m.id = mention.mentionID
-        m.headTokenIdx = mention.headIndex
-        m.mentionType = Some(mention.mentionType.toString)
-        m.sentenceId = mention.sentNum
-        m.posInSentence = mention.position.get(1)
-        m.text = mention.mentionSpan
-        m.toks = mention.startIndex -> mention.endIndex
-        val headToken = doc.sentences(m.sentenceId - 1).tokens(m.headTokenIdx - 1)
-        m.ner = headToken.ner
-        m.attrs("GENDER") = mention.gender.toString
-        m.attrs("ANIMACY") = mention.animacy.toString
-        m.attrs("NUMBER") = mention.number.toString
-        doc.sentences(m.sentenceId - 1).mentions += m
-        e.mids += m.id
-        if (rep.position == mention.position) {
-          e.representativeMId = m.id
-          e.representativeString = m.text
-          e.ner = m.ner
+    if(annotators.contains("dcoref")) {
+      val graph = document.get(classOf[CorefChainAnnotation])
+      for ((id, chain) <- graph) {
+        val e = new Entity()
+        e.id = id.toInt
+        val rep = chain.getRepresentativeMention
+        for (mention <- chain.getMentionsInTextualOrder) {
+          val m = new Mention()
+          m.entityId = Some(e.id)
+          m.id = mention.mentionID
+          m.headTokenIdx = mention.headIndex
+          m.mentionType = Some(mention.mentionType.toString)
+          m.sentenceId = mention.sentNum
+          m.posInSentence = mention.position.get(1)
+          m.text = mention.mentionSpan
+          m.toks = mention.startIndex -> mention.endIndex
+          val headToken = doc.sentences(m.sentenceId - 1).tokens(m.headTokenIdx - 1)
+          m.ner = headToken.ner
+          m.attrs("GENDER") = mention.gender.toString
+          m.attrs("ANIMACY") = mention.animacy.toString
+          m.attrs("NUMBER") = mention.number.toString
+          doc.sentences(m.sentenceId - 1).mentions += m
+          e.mids += m.id
+          if (rep.position == mention.position) {
+            e.representativeMId = m.id
+            e.representativeString = m.text
+            e.ner = m.ner
+          }
         }
+        doc.entities += e
       }
-      doc.entities += e
     }
     doc
   }
