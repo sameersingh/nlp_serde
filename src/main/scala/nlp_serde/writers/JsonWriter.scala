@@ -66,8 +66,8 @@ object SplitPerLineJsonWriter {
       "%s/%s.%s".format(parent, year, name)
     }
     val docs = new PerLineJsonReader(true).read(inputFile)
-    println(docs.size)
-    //val writer = new SplitPerLineJsonWriter(newName, true)
-    //writer.write(inputFile, docs)
+    // println(docs.size)
+    val writer = new SplitPerLineJsonWriter(newName, true)
+    writer.write(inputFile, docs)
   }
 }
