@@ -15,25 +15,26 @@ import scala.collection.JavaConversions._
 class NYTReader(val filter: NYTCorpusDocument => Boolean = x => true, val validating: Boolean = false) extends DocPerFile {
   val parser = new NYTCorpusDocumentParser()
   val classes = new collection.mutable.HashMap[String, Int]
+
   override def readDoc(name: String): Option[Document] = {
-    if(!name.endsWith(".xml")) return None
+    if (!name.endsWith(".xml")) return None
     val f = new File(name)
     val nytDoc = parser.parseNYTCorpusDocumentFromFile(f, validating)
-    if(!filter(nytDoc)) return None
+    if (!filter(nytDoc)) return None
+    if (nytDoc.getBody == null) return None
     val doc = new Document()
     doc.id = nytDoc.getGuid.toString
     doc.path = Some(nytDoc.getSourceFile.getAbsolutePath.replaceAll(".*/data/", ""))
-    //System.exit(1)
     doc.text = nytDoc.getBody
     val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
-    doc.attrs("date") = dateFormatter.format(nytDoc.getPublicationDate)
-    doc.attrs("taxonomicClassifiers") = nytDoc.getTaxonomicClassifiers.mkString("\t")
-    doc.attrs("title") = nytDoc.getHeadline
-    doc.attrs("onlineSection") = nytDoc.getOnlineSection
-    doc.attrs("newsDesk") = nytDoc.getNewsDesk
-    doc.attrs("typesOfMaterial") = nytDoc.getTypesOfMaterial.mkString("\t")
-    doc.attrs("url") = nytDoc.getUrl.toString
-    for(c <- nytDoc.getTaxonomicClassifiers) {
+    Option(nytDoc.getPublicationDate).foreach(v => doc.attrs("date") = dateFormatter.format(v))
+    Option(nytDoc.getTaxonomicClassifiers).foreach(v => doc.attrs("taxonomicClassifiers") = v.mkString("\t"))
+    Option(nytDoc.getHeadline).foreach(v => doc.attrs("title") = v)
+    Option(nytDoc.getOnlineSection).foreach(v => doc.attrs("onlineSection") = v)
+    Option(nytDoc.getNewsDesk).foreach(v => doc.attrs("newsDesk") = v)
+    Option(nytDoc.getTypesOfMaterial).foreach(v => doc.attrs("typesOfMaterial") = v.mkString("\t"))
+    Option(nytDoc.getUrl).foreach(v => doc.attrs("url") = v.toString)
+    for (c <- nytDoc.getTaxonomicClassifiers) {
       classes(c) = 1 + classes.getOrElse(c, 0)
     }
     Some(doc)
