@@ -14,7 +14,8 @@ import scala.collection.JavaConversions._
  */
 class NYTReader(val filter: NYTCorpusDocument => Boolean = x => true, val validating: Boolean = false) extends DocPerFile {
   val parser = new NYTCorpusDocumentParser()
-  val classes = new collection.mutable.HashMap[String, Int]
+  val taxonomicClassifiers = new collection.mutable.HashMap[String, Int]
+  val typesofMaterials = new collection.mutable.HashMap[String, Int]
 
   override def readDoc(name: String): Option[Document] = {
     if (!name.endsWith(".xml")) return None
@@ -35,7 +36,10 @@ class NYTReader(val filter: NYTCorpusDocument => Boolean = x => true, val valida
     Option(nytDoc.getTypesOfMaterial).foreach(v => doc.attrs("typesOfMaterial") = v.mkString("\t"))
     Option(nytDoc.getUrl).foreach(v => doc.attrs("url") = v.toString)
     for (c <- nytDoc.getTaxonomicClassifiers) {
-      classes(c) = 1 + classes.getOrElse(c, 0)
+      taxonomicClassifiers(c) = 1 + taxonomicClassifiers.getOrElse(c, 0)
+    }
+    for (t <- nytDoc.getTypesOfMaterial) {
+      typesofMaterials(t) = 1 + typesofMaterials.getOrElse(t, 0)
     }
     Some(doc)
   }
@@ -43,12 +47,12 @@ class NYTReader(val filter: NYTCorpusDocument => Boolean = x => true, val valida
 
 object NYTReader {
   def main(args: Array[String]): Unit = {
-    val nytBase = "/home/sameer/work/data/nyt/nyt/"
+    val nytBase = "data/nyt/nyt/"
     //val nytBase = "/Users/sameer/Work/data/nyt/nyt/"
     val reader = new NYTReader(_.getTaxonomicClassifiers.forall(!_.contains("Top/Classifieds")))
     val docs = reader.readFilelist(nytBase + "docs/file.tbl", l => nytBase + "data" + l.drop(3))
     val writer = new PerLineJsonWriter(true)
     writer.write(nytBase + "../nyt.txt.json.gz", docs)
-    println(reader.classes.toSeq.sortBy(_._2).map(p => p._1 + "\t" + p._2).mkString("\n"))
+    println(reader.typesofMaterials.toSeq.sortBy(_._2).map(p => p._1 + "\t" + p._2).mkString("\n"))
   }
 }
