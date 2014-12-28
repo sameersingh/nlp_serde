@@ -33,6 +33,8 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
   FigerSystem.modelFile = modelFile
   lazy val figer: FigerSystem = FigerSystem.instance()
 
+  lazy val validNerTypes = Set("PERSON", "ORGANIZATION", "LOCATION", "MISC")
+
   override def process(doc: Document): Document = {
     import scala.collection.JavaConverters._
     for (s <- doc.sentences) {
@@ -40,11 +42,17 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
         Dependency.newBuilder().setType(dep.label).setGov(dep.source).setDep(dep.target).build()).toList.asJava
       lazy val tokens = s.tokens.map(tok => tok.text).toList.asJava
       lazy val postags = s.tokens.map(tok => tok.pos.get).toList.asJava
-      for (m <- s.mentions) {
-        if (!Range(m.toks._1 - 1, m.toks._2 - 1).exists(i => s.tokens(i).ner.getOrElse("O") == "O")) {
-          // a true named entity mention
+      lazy val nertags = s.tokens.map(tok => tok.ner.get).toList.asJava
+      if (s.mentions.isEmpty) {
+        // use ner tags
+        val nerTokens = s.tokens.map(tok => tok.ner.get).zipWithIndex.filter(x => validNerTypes contains x._1)
+        val startTokens = nerTokens.filter(x => !nerTokens.contains(x._1, x._2 - 1)).map(x => x._2)
+        val endTokens = nerTokens.filter(x => !nerTokens.contains(x._1, x._2 + 1)).map(x => x._2 + 1)
+        val spans = startTokens.zip(endTokens)
+        val spanTags = nerTokens.filter(x => !nerTokens.contains(x._1, x._2 - 1)).map(x => x._1).zip(spans)
+        for ((tag, span) <- spanTags) {
           val figerMention = Mention.newBuilder()
-            .setStart(m.toks._1 - 1).setEnd(m.toks._2 - 1)
+            .setStart(span._1).setEnd(span._2)
             .addAllTokens(tokens).addAllPosTags(postags).addAllDeps(figerDeps)
             .setEntityName("").setFileid("").setSentid(s.idx - 1).build()
           val features = new util.ArrayList[String]()
@@ -53,8 +61,33 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
           val pred = figer.predict(features).split("[,\t]").map(str => {
             val pair = str.split("@");
             (pair(0), pair(1).toDouble)
-          }).filter(p => p._2 > threshold).map(p=>p._1+"@"+p._2.toString).mkString(",")
+          }).filter(p => p._2 > threshold).map(p => p._1 + "@" + p._2.toString).mkString(",")
+          val m = new nlp_serde.Mention()
+          m.sentenceId = s.idx
+          m.ner = Some(tag)
+          m.mentionType = Some("PROPER")
+          m.toks = span
+          m.posInSentence
           m.attrs += ("figer" -> pred)
+          s.mentions += m
+        }
+      } else {
+        for (m <- s.mentions) {
+          if (!Range(m.toks._1 - 1, m.toks._2 - 1).exists(i => s.tokens(i).ner.getOrElse("O") == "O")) {
+            // a true named entity mention
+            val figerMention = Mention.newBuilder()
+              .setStart(m.toks._1 - 1).setEnd(m.toks._2 - 1)
+              .addAllTokens(tokens).addAllPosTags(postags).addAllDeps(figerDeps)
+              .setEntityName("").setFileid("").setSentid(s.idx - 1).build()
+            val features = new util.ArrayList[String]()
+            figer.nerFeature.extract(figerMention, features)
+            // remove below threshold labels
+            val pred = figer.predict(features).split("[,\t]").map(str => {
+              val pair = str.split("@");
+              (pair(0), pair(1).toDouble)
+            }).filter(p => p._2 > threshold).map(p => p._1 + "@" + p._2.toString).mkString(",")
+            m.attrs += ("figer" -> pred)
+          }
         }
       }
     }
@@ -77,14 +110,14 @@ object FigerAnnotator {
 
     writer.write(output, docs)
 
-//    val d = new Document()
-//    d.id = "doc001"
-//    d.text = "Barack Obama is the president of the United States. He is married to Michelle Obama, and is not related to George Bush."
+    //    val d = new Document()
+    //    d.id = "doc001"
+    //    d.text = "Barack Obama is the president of the United States. He is married to Michelle Obama, and is not related to George Bush."
 
-//    stanf.process(d)
-//    figer.process(d)
-//    val pd = d.toCase
-//    println(pd.entities.mkString("\n"))
-//    println(pd.sentences.flatMap(_.mentions).mkString("\n"))
+    //    stanf.process(d)
+    //    figer.process(d)
+    //    val pd = d.toCase
+    //    println(pd.entities.mkString("\n"))
+    //    println(pd.sentences.flatMap(_.mentions).mkString("\n"))
   }
 }
