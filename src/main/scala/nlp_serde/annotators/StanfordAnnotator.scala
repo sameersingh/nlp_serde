@@ -68,36 +68,37 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       s.depTree = Some(depTreeFromSemanticG(dependencies))
       doc.sentences += s
     }
-
-    val graph = document.get(classOf[CorefChainAnnotation])
-    for ((id, chain) <- graph) {
-      val e = new Entity()
-      e.id = id.toInt
-      val rep = chain.getRepresentativeMention
-      for (mention <- chain.getMentionsInTextualOrder) {
-        val m = new Mention()
-        m.entityId = Some(e.id)
-        m.id = mention.mentionID
-        m.headTokenIdx = mention.headIndex
-        m.mentionType = Some(mention.mentionType.toString)
-        m.sentenceId = mention.sentNum
-        m.posInSentence = mention.position.get(1)
-        m.text = mention.mentionSpan
-        m.toks = mention.startIndex -> mention.endIndex
-        val headToken = doc.sentences(m.sentenceId - 1).tokens(m.headTokenIdx - 1)
-        m.ner = headToken.ner
-        m.attrs("GENDER") = mention.gender.toString
-        m.attrs("ANIMACY") = mention.animacy.toString
-        m.attrs("NUMBER") = mention.number.toString
-        doc.sentences(m.sentenceId - 1).mentions += m
-        e.mids += m.id
-        if (rep.position == mention.position) {
-          e.representativeMId = m.id
-          e.representativeString = m.text
-          e.ner = m.ner
+    if (annotators.contains("dcoref")) {
+      val graph = document.get(classOf[CorefChainAnnotation])
+      for ((id, chain) <- graph) {
+        val e = new Entity()
+        e.id = id.toInt
+        val rep = chain.getRepresentativeMention
+        for (mention <- chain.getMentionsInTextualOrder) {
+          val m = new Mention()
+          m.entityId = Some(e.id)
+          m.id = mention.mentionID
+          m.headTokenIdx = mention.headIndex
+          m.mentionType = Some(mention.mentionType.toString)
+          m.sentenceId = mention.sentNum
+          m.posInSentence = mention.position.get(1)
+          m.text = mention.mentionSpan
+          m.toks = mention.startIndex -> mention.endIndex
+          val headToken = doc.sentences(m.sentenceId - 1).tokens(m.headTokenIdx - 1)
+          m.ner = headToken.ner
+          m.attrs("GENDER") = mention.gender.toString
+          m.attrs("ANIMACY") = mention.animacy.toString
+          m.attrs("NUMBER") = mention.number.toString
+          doc.sentences(m.sentenceId - 1).mentions += m
+          e.mids += m.id
+          if (rep.position == mention.position) {
+            e.representativeMId = m.id
+            e.representativeString = m.text
+            e.ner = m.ner
+          }
         }
+        doc.entities += e
       }
-      doc.entities += e
     }
     doc
   }
@@ -105,18 +106,28 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
 
 object StanfordAnnotator {
   def main(args: Array[String]): Unit = {
-    if (args.length != 2) {
+    if (args.length < 2) {
       println("Not enough arguments: input_file.json.gz output_file.json.gz")
     }
     val input = args(0)
     val output = args(1)
+
     println("Reading: " + input)
     val reader = new PerLineJsonReader(true)
     val docs = reader.read(input)
-    val annotator = new MultiThreadedAnnotator(new StanfordAnnotator)
-    val nlpDocs = annotator.process(docs)
+    val (start, end) =
+    if (args.length == 4) {
+      (args(2).toInt , args(3).toInt)
+    } else {
+      (0 , docs.length)
+    }
+    println("processing from %d to %d" format(start, end))
+    //val annotator = new MultiThreadedAnnotator(new StanfordAnnotator(Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse"), false))
+    //val nlpDocs = annotator.process(docs)
+    val annotator = new StanfordAnnotator(Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse"), false)
+    val nlpDocs = annotator.process(docs.drop(start).take(end - start))
     println("Writing: " + output)
     val writer = new PerLineJsonWriter(true)
-    writer.write(output, nlpDocs)
+    writer.write(output + "-" + start + "-" + end, nlpDocs)
   }
 }

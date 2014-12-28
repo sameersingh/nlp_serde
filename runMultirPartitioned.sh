@@ -1,8 +1,9 @@
 
-input="nigeria_dataset_v04.nlp.in.json.gz"
-output="nigeria_dataset_v04.nlp.out.json.gz"
-
-cp "nigeria_dataset_v04.nlp.cw.json.gz" $input
+#input="nigeria_dataset_v04.nlp.in.json.gz"
+#output="nigeria_dataset_v04.nlp.out.json.gz"
+input=$1
+output=$2
+cp $input ${input}.bak
 for a1 in PERSON ORGANIZATION MISC
 do
   for a2 in PERSON ORGANIZATION LOCATION MISC
@@ -11,5 +12,5 @@ do
      mv $output $input
   done
 done
-
-mv $output nigeria_dataset_v04.nlp.cw.multir_partitioned.json.gz
+mv ${input}.bak $input
+#mv $output nigeria_dataset_v04.nlp.cw.multir_partitioned.json.gz

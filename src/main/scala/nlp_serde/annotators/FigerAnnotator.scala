@@ -68,7 +68,7 @@ object FigerAnnotator {
     val modelFile = if (args.size > 0) args(0) else "figer.model.gz"
     val input = args(1) // "nigeria_dataset_v04.nlp.lr.json.gz"
     val output = args(2) //"nigeria_dataset_v04.nlp.lrf.json.gz"
-    val stanf = new StanfordAnnotator()
+   // val stanf = new StanfordAnnotator()
     val figer = new FigerAnnotator(modelFile)
     val reader = new PerLineJsonReader(true)
 
