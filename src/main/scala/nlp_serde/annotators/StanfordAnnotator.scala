@@ -68,8 +68,7 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       s.depTree = Some(depTreeFromSemanticG(dependencies))
       doc.sentences += s
     }
-
-    if(annotators.contains("dcoref")) {
+    if (annotators.contains("dcoref")) {
       val graph = document.get(classOf[CorefChainAnnotation])
       for ((id, chain) <- graph) {
         val e = new Entity()
@@ -107,19 +106,28 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
 
 object StanfordAnnotator {
   def main(args: Array[String]): Unit = {
-    if (args.length != 2) {
+    if (args.length < 2) {
       println("Not enough arguments: input_file.json.gz output_file.json.gz")
     }
     val input = args(0)
     val output = args(1)
+
     println("Reading: " + input)
     val reader = new PerLineJsonReader(true)
     val docs = reader.read(input)
-    // val annotator = new MultiThreadedAnnotator(new StanfordAnnotator(Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse")))
-    val annotator = new StanfordAnnotator(Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse"))
-    val nlpDocs = annotator.process(docs)
+    val (start, end) =
+    if (args.length == 4) {
+      (args(2).toInt , args(3).toInt)
+    } else {
+      (0 , docs.length)
+    }
+    println("processing from %d to %d" format(start, end))
+    //val annotator = new MultiThreadedAnnotator(new StanfordAnnotator(Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse"), false))
+    //val nlpDocs = annotator.process(docs)
+    val annotator = new StanfordAnnotator(Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse"), false)
+    val nlpDocs = annotator.process(docs.drop(start).take(end - start))
     println("Writing: " + output)
     val writer = new PerLineJsonWriter(true)
-    writer.write(output, nlpDocs)
+    writer.write(output + "-" + start + "-" + end, nlpDocs)
   }
 }

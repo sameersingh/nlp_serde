@@ -304,12 +304,14 @@ object TestCrosswikisLinker {
 
 object RunCrosswikisLinkerForD2D {
   def main(args: Array[String]): Unit = {
+    val input = args(0) // "nigeria_dataset_v04.nlp.lrf.json.gz";
+    val output = args(1) // "nigeria_dataset_v04.nlp.lrfl.json.gz"
     val linker = new CrosswikiLinkerMongo(dbHost = "rv-n12", dbName = "vinculum", useFiger = true)
     val reader = new PerLineJsonReader(true)
-    val docs = reader.read("nigeria_dataset_v04.nlp.lrf.json.gz")
+    val docs = reader.read(input)
     val nlpDocs = linker.process(docs)
     //    nlpDocs.foreach(println)
     val writer = new PerLineJsonWriter(true)
-    writer.write("nigeria_dataset_v04.nlp.lrfl.json.gz", nlpDocs)
+    writer.write(output, nlpDocs)
   }
 }
