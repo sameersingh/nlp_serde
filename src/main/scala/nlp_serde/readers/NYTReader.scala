@@ -46,10 +46,17 @@ class NYTReader(val filter: NYTCorpusDocument => Boolean = x => true, val valida
 }
 
 object NYTReader {
+
+  def filterNonArticles(d: NYTCorpusDocument): Boolean = {
+    d.getTaxonomicClassifiers.forall(!_.contains("Top/Classifieds")) &&
+      d.getTypesOfMaterial.forall(_.toLowerCase != "list") &&
+      d.getTypesOfMaterial.forall(!_.toLowerCase.contains("statistic"))
+  }
+
   def main(args: Array[String]): Unit = {
     val nytBase = "data/nyt/nyt/"
     //val nytBase = "/Users/sameer/Work/data/nyt/nyt/"
-    val reader = new NYTReader(_.getTaxonomicClassifiers.forall(!_.contains("Top/Classifieds")))
+    val reader = new NYTReader(filterNonArticles)
     val docs = reader.readFilelist(nytBase + "docs/file.tbl", l => nytBase + "data" + l.drop(3))
     val writer = new PerLineJsonWriter(true)
     writer.write(nytBase + "../nyt.txt.json.gz", docs)
