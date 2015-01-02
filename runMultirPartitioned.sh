@@ -8,7 +8,7 @@ for a1 in PERSON ORGANIZATION MISC
 do
   for a2 in PERSON ORGANIZATION LOCATION MISC
   do
-     mvn scala:run -DmainClass=nlp_serde.annotators.relations.TestMultiRAnnotator -DjavaOpts.Xmx=30g -DaddArgs="${a1}|${a2}|${input}|${output}"
+     mvn scala:run -DmainClass=nlp_serde.annotators.relations.RunPartitionedMultiRAnnotator -DjavaOpts.Xmx=30g -DaddArgs="${a1}|${a2}|${input}|${output}"
      mv $output $input
   done
 done

@@ -33,8 +33,6 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
   FigerSystem.modelFile = modelFile
   lazy val figer: FigerSystem = FigerSystem.instance()
 
-  lazy val validNerTypes = Set("PERSON", "ORGANIZATION", "LOCATION", "MISC")
-
   override def process(doc: Document): Document = {
     import scala.collection.JavaConverters._
     for (s <- doc.sentences) {
@@ -43,16 +41,11 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
       lazy val tokens = s.tokens.map(tok => tok.text).toList.asJava
       lazy val postags = s.tokens.map(tok => tok.pos.get).toList.asJava
       lazy val nertags = s.tokens.map(tok => tok.ner.get).toList.asJava
-      if (s.mentions.isEmpty) {
-        // use ner tags
-        val nerTokens = s.tokens.map(tok => tok.ner.get).zipWithIndex.filter(x => validNerTypes contains x._1)
-        val startTokens = nerTokens.filter(x => !nerTokens.contains(x._1, x._2 - 1)).map(x => x._2)
-        val endTokens = nerTokens.filter(x => !nerTokens.contains(x._1, x._2 + 1)).map(x => x._2 + 1)
-        val spans = startTokens.zip(endTokens)
-        val spanTags = nerTokens.filter(x => !nerTokens.contains(x._1, x._2 - 1)).map(x => x._1).zip(spans)
-        for ((tag, span) <- spanTags) {
+      for (m <- s.mentions) {
+        if (!Range(m.toks._1 - 1, m.toks._2 - 1).exists(i => s.tokens(i).ner.getOrElse("O") == "O")) {
+          // a true named entity mention
           val figerMention = Mention.newBuilder()
-            .setStart(span._1).setEnd(span._2)
+            .setStart(m.toks._1 - 1).setEnd(m.toks._2 - 1)
             .addAllTokens(tokens).addAllPosTags(postags).addAllDeps(figerDeps)
             .setEntityName("").setFileid("").setSentid(s.idx - 1).build()
           val features = new util.ArrayList[String]()
@@ -62,32 +55,7 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
             val pair = str.split("@");
             (pair(0), pair(1).toDouble)
           }).filter(p => p._2 > threshold).map(p => p._1 + "@" + p._2.toString).mkString(",")
-          val m = new nlp_serde.Mention()
-          m.sentenceId = s.idx
-          m.ner = Some(tag)
-          m.mentionType = Some("PROPER")
-          m.toks = span
-          m.posInSentence
           m.attrs += ("figer" -> pred)
-          s.mentions += m
-        }
-      } else {
-        for (m <- s.mentions) {
-          if (!Range(m.toks._1 - 1, m.toks._2 - 1).exists(i => s.tokens(i).ner.getOrElse("O") == "O")) {
-            // a true named entity mention
-            val figerMention = Mention.newBuilder()
-              .setStart(m.toks._1 - 1).setEnd(m.toks._2 - 1)
-              .addAllTokens(tokens).addAllPosTags(postags).addAllDeps(figerDeps)
-              .setEntityName("").setFileid("").setSentid(s.idx - 1).build()
-            val features = new util.ArrayList[String]()
-            figer.nerFeature.extract(figerMention, features)
-            // remove below threshold labels
-            val pred = figer.predict(features).split("[,\t]").map(str => {
-              val pair = str.split("@");
-              (pair(0), pair(1).toDouble)
-            }).filter(p => p._2 > threshold).map(p => p._1 + "@" + p._2.toString).mkString(",")
-            m.attrs += ("figer" -> pred)
-          }
         }
       }
     }
@@ -95,29 +63,21 @@ class FigerAnnotator(modelFile: String, threshold: Double = 0.0) extends Annotat
   }
 }
 
-
+/**
+ * args:
+ * 0 -> input file name
+ * 1 -> output file name
+ */
 object FigerAnnotator {
   def main(args: Array[String]) {
     val modelFile = if (args.size > 0) args(0) else "figer.model.gz"
     val input = args(1) // "nigeria_dataset_v04.nlp.lr.json.gz"
     val output = args(2) //"nigeria_dataset_v04.nlp.lrf.json.gz"
-   // val stanf = new StanfordAnnotator()
+    // val stanf = new StanfordAnnotator()
     val figer = new FigerAnnotator(modelFile)
     val reader = new PerLineJsonReader(true)
-
     val docs = figer.process(reader.read(input))
     val writer = new PerLineJsonWriter(true)
-
     writer.write(output, docs)
-
-    //    val d = new Document()
-    //    d.id = "doc001"
-    //    d.text = "Barack Obama is the president of the United States. He is married to Michelle Obama, and is not related to George Bush."
-
-    //    stanf.process(d)
-    //    figer.process(d)
-    //    val pd = d.toCase
-    //    println(pd.entities.mkString("\n"))
-    //    println(pd.sentences.flatMap(_.mentions).mkString("\n"))
   }
 }

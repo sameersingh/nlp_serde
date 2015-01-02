@@ -247,7 +247,7 @@ class MultiRAnnotator(val pathToMultirFiles: String,
 
         //  val features = fg.generateFeatures(arg1.getStartOffset, arg1.getEndOffset, arg2.getStartOffset, arg2.getEndOffset, arg1ID, arg2ID, s, doc)
         val features = SerdeDefaultMultiRFeatureGeneratorMinusDirMinusDep.generateFeatures(arg1, arg2, s)
-        println("CONVERTED FEATURES!" + features);
+//        println("CONVERTED FEATURES!" + features);
         val result = getPrediction(features.toList, arg1.text, arg2.text, s.text)
         if (result != null) {
           val relationScoreTriple: Triple[String, Double, Double] = result._1
@@ -334,12 +334,18 @@ object SerdeDefaultMultiRFeatureGeneratorMinusDirMinusDep {
   }
 }
 
-object TestMultiRAnnotator extends App {
+/**
+ * Run MultiR with a partitioned model for the given pair of entity types
+ * args:
+ * 0 -> arg1 entity type
+ * 1 -> arg2 entity type
+ * 2 -> input file name
+ * 3 -> output file name
+ */
+object RunPartitionedMultiRAnnotator extends App {
   args.foreach(println)
-
   val inputFile = args(2)
   val outputFile = args(3)
-
 
   val shortNames = Map("PERSON" -> "PER", "ORGANIZATION" -> "ORG", "LOCATION" -> "LOC", "MISC" -> "OTHER")
   val arg1Type = args(0)
@@ -351,6 +357,7 @@ object TestMultiRAnnotator extends App {
 
   val reader = new PerLineJsonReader(true)
   val docs = reader.read(inputFile)
+
   val nlpDocs = multir.process(docs)
   //  nlpDocs.foreach(println)
   val writer = new PerLineJsonWriter(true)
