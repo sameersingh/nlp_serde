@@ -12,5 +12,6 @@ do
      mv $output $input
   done
 done
+mv $input $output
 mv ${input}.bak $input
 #mv $output nigeria_dataset_v04.nlp.cw.multir_partitioned.json.gz
