@@ -115,19 +115,24 @@ object StanfordAnnotator {
     println("Reading: " + input)
     val reader = new PerLineJsonReader(true)
     val docs = reader.read(input)
-    val (start, end) =
+    val limits =
     if (args.length == 4) {
-      (args(2).toInt , args(3).toInt)
+      Some(args(2).toInt , args(3).toInt)
     } else {
-      (0 , docs.length)
+      None
     }
-    println("processing from %d to %d" format(start, end))
+    limits.foreach(l => "processing from %d to %d" format(l._1, l._2))
     //val annotator = new MultiThreadedAnnotator(new StanfordAnnotator(Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse"), false))
     //val nlpDocs = annotator.process(docs)
     val annotator = new StanfordAnnotator(Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse"), false)
-    val nlpDocs = annotator.process(docs.drop(start).take(end - start))
+    val nlpDocs = if(limits.isDefined) {
+      annotator.process(docs.drop(limits.get._1).take(limits.get._2 - limits.get._1))
+    } else annotator.process(docs)
     println("Writing: " + output)
     val writer = new PerLineJsonWriter(true)
-    writer.write(output + "-" + start + "-" + end, nlpDocs)
+    if(limits.isDefined) {
+      val (start,end) = limits.get
+      writer.write(output + "-" + start + "-" + end, nlpDocs)
+    } else writer.write(output, nlpDocs)
   }
 }
