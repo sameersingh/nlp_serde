@@ -135,62 +135,62 @@ class CrosswikiLinkerMongo(dbHost: String, dbPort: Int = 27017, dbName: String, 
 
   override def process(doc: Document): Document = {
     print("linking doc=" + doc.id)
-      for (e <- doc.entities) {
-        e.freebaseIds.clear()
-        print(".")
-        // find the best name for linking
-        var repMention: Mention = null
-        var realMention: Mention = null
-        val sent = doc.sentences.find(s => s.mentions.exists(m => if (m.id == e.representativeMId) {
-          repMention = m
-          true
-        } else false))
+    for (e <- doc.entities) {
+      e.freebaseIds.clear()
+      print(".")
+      // find the best name for linking
+      var repMention: Mention = null
+      var realMention: Mention = null
+      val sent = doc.sentences.find(s => s.mentions.exists(m => if (m.id == e.representativeMId) {
+        repMention = m
+        true
+      } else false))
 
-        realMention = repMention
-        //      println("sent="+sent.get.toCase.toString)
-        var needLink = false
-        sent match {
-          case Some(s) => needLink = isNE(repMention, s);
-            if (!needLink && repMention.mentionType.getOrElse("") == "PROPER" && neClasses.contains(repMention.ner.getOrElse(""))) {
-              for (m <- s.mentions) {
-                if (repMention != m && e.id == m.entityId.getOrElse(-1) && m.toks._1 >= repMention.toks._1 && m.toks._2 <= repMention.toks._2 && isNE(m, s)) {
-                  // found a better mention for linking
-                  println("replace the string (" + repMention.text + ") by " + m.text)
-                  realMention = m
-                  needLink = true
-                }
-              }
-              // if still no luck with a reasonable mention, consider create a submention spanning from the head
-              if (!needLink) {
-                //        if (repMention.mentionType.getOrElse("") == "PROPER") {
-                //          // meaning that we can't find a submention that is purely a named entity
-                //          // use other mentions in the same cluster
-                //          //          val otherMention = getOtherMention(doc, e)
-                //          // get a sub mention which matches the type
-                //          val otherMention = getSubMention(doc, e, repMention)
-                //          if (otherMention != null) {
-                //            realMention = otherMention
-                //            needLink = true
-                //          }
-                //        }
-                val otherMention = getSubMention(doc, s, repMention)
-                if (otherMention != null) {
-                  println("replace the string (" + repMention + ") by a submention " + otherMention.text)
-                  realMention = otherMention
-                  needLink = true
-                }
+      realMention = repMention
+      //      println("sent="+sent.get.toCase.toString)
+      var needLink = false
+      sent match {
+        case Some(s) => needLink = isNE(repMention, s);
+          if (!needLink && repMention.mentionType.getOrElse("") == "PROPER" && neClasses.contains(repMention.ner.getOrElse(""))) {
+            for (m <- s.mentions) {
+              if (repMention != m && e.id == m.entityId.getOrElse(-1) && m.toks._1 >= repMention.toks._1 && m.toks._2 <= repMention.toks._2 && isNE(m, s)) {
+                // found a better mention for linking
+                println("replace the string (" + repMention.text + ") by " + m.text)
+                realMention = m
+                needLink = true
               }
             }
-          case None => println("repMention not found in any sentence, mention=" + e.representativeMId + ", entity=" + e.id + ", doc=" + doc.id)
-        }
-        //      println("candidates for "+string)
-        //      val fbIds = dictionary.getOrElse(string, Seq.empty)
-        if (needLink) {
-          val fbIds = getCandidates(realMention)
-          e.freebaseIds ++= fbIds
-        } else {
-          e.freebaseIds ++= Map()
-        }
+            // if still no luck with a reasonable mention, consider create a submention spanning from the head
+            if (!needLink) {
+              //        if (repMention.mentionType.getOrElse("") == "PROPER") {
+              //          // meaning that we can't find a submention that is purely a named entity
+              //          // use other mentions in the same cluster
+              //          //          val otherMention = getOtherMention(doc, e)
+              //          // get a sub mention which matches the type
+              //          val otherMention = getSubMention(doc, e, repMention)
+              //          if (otherMention != null) {
+              //            realMention = otherMention
+              //            needLink = true
+              //          }
+              //        }
+              val otherMention = getSubMention(doc, s, repMention)
+              if (otherMention != null) {
+                println("replace the string (" + repMention + ") by a submention " + otherMention.text)
+                realMention = otherMention
+                needLink = true
+              }
+            }
+          }
+        case None => println("repMention not found in any sentence, mention=" + e.representativeMId + ", entity=" + e.id + ", doc=" + doc.id)
+      }
+      //      println("candidates for "+string)
+      //      val fbIds = dictionary.getOrElse(string, Seq.empty)
+      if (needLink) {
+        val fbIds = getCandidates(realMention)
+        e.freebaseIds ++= fbIds
+      } else {
+        e.freebaseIds ++= Map()
+      }
     }
     println()
     doc
@@ -313,13 +313,22 @@ object RunCrosswikisLinkerForD2D {
     val linker = new CrosswikiLinkerMongo(dbHost = "rv-n12", dbName = "vinculum", useFiger = true)
     val reader = new PerLineJsonReader(true)
     val docs = reader.read(input)
-    val (s, e) = if (args.length > 2) {
-      (args(2).toInt, args(3).toInt)
-    } else (0, docs.length)
+    val limits =
+      if (args.length == 4) {
+        Some(args(2).toInt , args(3).toInt)
+      } else {
+        None
+      }
 
-    val nlpDocs = linker.process(docs.drop(s).take(e - s))
+    limits.foreach(l => "processing from %d to %d" format(l._1, l._2))
+    val nlpDocs = if(limits.isDefined) {
+      linker.process(docs.drop(limits.get._1).take(limits.get._2 - limits.get._1))
+    } else linker.process(docs)
     //    nlpDocs.foreach(println)
     val writer = new PerLineJsonWriter(true)
-    writer.write(output, nlpDocs)
+    if (limits.isDefined) {
+      val (start, end) = limits.get
+      writer.write(output + "-" + start + "-" + end, nlpDocs)
+    } else writer.write(output, nlpDocs)
   }
 }
