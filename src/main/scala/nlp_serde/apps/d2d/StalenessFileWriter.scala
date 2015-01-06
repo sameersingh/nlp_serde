@@ -1,10 +1,11 @@
 package nlp_serde.apps.d2d
 
-import java.io.PrintWriter
+import java.io.{FileOutputStream, FileInputStream, PrintWriter}
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 
-import nlp_serde.{Entity, Document}
+import nlp_serde.{FileUtil, Entity, Document}
 import nlp_serde.readers.PerLineJsonReader
 import nlp_serde.writers.{HTMLWriter, Writer}
 
@@ -15,7 +16,7 @@ import scala.collection.mutable
  */
 class StalenessFileWriter extends Writer {
   override def write(name: String, docs: Iterator[Document]): Unit = {
-    val writer = new PrintWriter(name)
+    val writer = FileUtil.writer(name, true)
     for (d <- docs) {
       write(writer, d)
     }
@@ -85,9 +86,9 @@ class StalenessFileWriter extends Writer {
 
 object StalenessFileWriter {
   def main(args: Array[String]): Unit = {
-    val baseDir = "/Users/sameer/Google Drive/UW/D2D/D2D Nov 14/" //"/home/sameer/data/d2d/demo2015/nov/"
-    val inputFile = baseDir + "nigeria_dataset_v04.nlp.lrf.json.gz"
-    val outputFile = baseDir + "nigeria_dataset_v04.staleness.txt"
+    val baseDir = "data/d2d/"
+    val inputFile = baseDir + "docs.nlp.flr.json.gz"
+    val outputFile = baseDir + "docs.staleness.txt.gz"
     val reader = new PerLineJsonReader()
     val docs = reader.read(inputFile)
     val writer = new StalenessFileWriter()
@@ -97,8 +98,8 @@ object StalenessFileWriter {
 
 object DocReader {
   def main(args: Array[String]) {
-    val inputFile = "/home/sameer/data/d2d/demo2015/nov/nigeria_dataset_v04.nlp.cw.json.gz"
-    val outputDir = "/home/sameer/data/d2d/demo2015/nov/html/"
+    val inputFile = "data/d2d/docs.txt.json.gz"
+    val outputDir = "data/d2d/html/"
     val writer = new HTMLWriter
     writer.write(outputDir, new PerLineJsonReader().read(inputFile))
   }
