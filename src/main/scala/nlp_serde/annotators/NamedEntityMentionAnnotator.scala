@@ -39,9 +39,11 @@ class NamedEntityMentionAnnotator extends Annotator {
         s.mentions += m
         val e = new nlp_serde.Entity()
         e.id = m.id
+        e.mids += m.id
         e.representativeMId = m.id
         e.representativeString = m.text
         e.ner = Some(m.ner.get)
+        m.entityId = Some(e.id)
         doc.entities += e
       }
     }
