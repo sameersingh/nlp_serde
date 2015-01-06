@@ -7,7 +7,7 @@ import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 
 import nlp_serde.{FileUtil, Entity, Document}
 import nlp_serde.readers.PerLineJsonReader
-import nlp_serde.writers.{HTMLWriter, Writer}
+import nlp_serde.writers.{PerLineJsonWriter, HTMLWriter, Writer}
 
 import scala.collection.mutable
 
@@ -72,12 +72,12 @@ class StalenessFileWriter extends Writer {
 
   def write(writer: PrintWriter, d: Document): Unit = {
     val entries = entityEntries(d)
-    println("Number of entities: " + entries.size)
+    // println("Number of entities: " + entries.size)
     for (e <- entries) {
       writer.println("%s\t%s\t%s\t%d" format(d.id, e.id, e.toks.map(_.trim).mkString("|"), e.date.getTime))
     }
     val relEntries = relationEntries(d)
-    println("Number of relations: " + entries.size)
+    // println("Number of relations: " + entries.size)
     for (e <- relEntries) {
       writer.println("%s\t%s\t%s\t%d" format(d.id, e.id, e.toks.map(_.trim).mkString("|"), e.date.getTime))
     }
@@ -93,6 +93,27 @@ object StalenessFileWriter {
     val docs = reader.read(inputFile)
     val writer = new StalenessFileWriter()
     writer.write(outputFile, docs)
+  }
+}
+
+/**
+ * Fix the bug in NERMentionAnnotator that did not link the entities to the mentions
+ */
+object FixMentionsAndEntities {
+  def main(args: Array[String]): Unit = {
+    val baseDir = "data/d2d/"
+    val inputFile = baseDir + "docs.nlp.flr.json.gz"
+    val outputFile = baseDir + "docs.nlp.flr.json.gz.fixed"
+    val reader = new PerLineJsonReader(true)
+    val docs = reader.read(inputFile)
+    val writer = new PerLineJsonWriter(true)
+    writer.write(outputFile, docs.map(d => {
+      for(m <- d.mentions.values)
+        m.entityId = Some(m.id)
+      for(e <- d.entities)
+        e.mids += e.id
+      d
+    }))
   }
 }
 

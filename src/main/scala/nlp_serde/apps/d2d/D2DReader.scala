@@ -7,7 +7,7 @@ import java.util.Date
 import nlp_serde.annotators.StanfordAnnotator
 import nlp_serde.writers.{PerLineJsonWriter, JsonWriter}
 import nlp_serde.{FileFilters, Document}
-import nlp_serde.readers.DocPerFile
+import nlp_serde.readers.{PerLineJsonReader, DocPerFile}
 
 import java.text.ParseException
 
@@ -277,5 +277,20 @@ object D2DReader {
     //val nlpDocs = annotator.process(docs)
     val writer = new PerLineJsonWriter(true)
     writer.write(outputFile, docs)
+  }
+}
+
+object SplitOnKeyword {
+  def main(args: Array[String]): Unit = {
+    val input = args(0)
+    val keyword = args(1).toLowerCase
+    val file = new File(input)
+    val dir = file.getParent
+    val name = file.getName
+    val output = dir + "/" + keyword + "." + name
+    println(s"Reading from $input into $output")
+    val writer = new PerLineJsonWriter(true)
+    val reader = new PerLineJsonReader(true)
+    writer.write(output, reader.read(input).filter(_.text.toLowerCase.matches(s".*$keyword.*")))
   }
 }
