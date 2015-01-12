@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 
 import nlp_serde.Document
 import nlp_serde.readers.PerLineJsonReader
-import nlp_serde.writers.{Writer, DocPerFile}
+import nlp_serde.writers.{PerLineJsonWriter, Writer, DocPerFile}
 
 /**
  * Created by sameer on 11/6/14.
@@ -19,7 +19,7 @@ class SummaFormatWriter(original: Boolean = true,
       new File(baseDir + "/original/").mkdirs()
       val fileList = new PrintWriter(baseDir + "/filelist.txt")
       for (d <- docs.filter(_.attrs.contains("date"))) {
-        val name = baseDir + "/original/" + new File(d.path.get).getName.dropRight(4) + ".story.xml"
+        val name = baseDir + "/original/" + d.id + ".story.xml"
         println(name)
         fileList.println(name)
         val writer = new PrintWriter(name)
@@ -66,13 +66,41 @@ class SummaFormatWriter(original: Boolean = true,
         "-outputDirectory", baseDir + "/corenlp/"
       ))
     }
+    // empty dir
+    new File(baseDir + "/extractions/").mkdirs()
   }
+}
+
+object FilterDocuments {
+  def filter(d: Document, keyword: String, datePrefixes: Set[String]): Boolean = {
+    //val datePrefixes = Set("2014-04","2014-05","2014-06")
+    //val keyword = "kidnap"
+    val date = d.attrs("date")
+    val title = d.attrs("title")
+    (datePrefixes.isEmpty || datePrefixes.exists(s => date.startsWith(s))) && title.toLowerCase.contains(keyword)
+  }
+
+  def main(args: Array[String]): Unit = {
+    val input = args(0)
+    val keyword = args(1).toLowerCase
+    val datePrefixes = args.drop(2).toSet
+    val file = new File(input)
+    val dir = file.getParent
+    val name = file.getName
+    val output = dir + "/" + keyword + "." + name
+    println(s"Reading from $input into $output")
+    val writer = new PerLineJsonWriter(true)
+    val reader = new PerLineJsonReader(true)
+    writer.write(output, reader.read(input).filter(d => filter(d, keyword, datePrefixes)))
+  }
+
 }
 
 object SummaFormatWriter {
   def main(args: Array[String]): Unit = {
-    def inputFile = "/home/sameer/data/d2d/demo2015/nov/nigeria_dataset_v04.nlp.json.gz"
-    def outputDir = "/home/sameer/data/d2d/demo2015/nov/summa/test"
+    val name = if(args.isEmpty) "kidnap" else args(0)
+    def inputFile = "data/d2d/"+name+".docs.nlp.flr.json.gz"
+    def outputDir = "data/d2d/summa/" + name
     val reader = new PerLineJsonReader()
     val docs = reader.read(inputFile)
     val writer = new SummaFormatWriter()
