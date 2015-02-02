@@ -256,6 +256,13 @@
                 <jvmArg>-Xmx16g</jvmArg>
               </jvmArgs>
             </launcher>
+            <launcher>
+              <id>iai-topic</id>
+              <mainClass>nlp_serde.apps.d2d.IAITopicReader</mainClass>
+              <jvmArgs>
+                <jvmArg>-Xmx16g</jvmArg>
+              </jvmArgs>
+            </launcher>
           </launchers>
         </configuration>
       </plugin>
