@@ -13,7 +13,7 @@ import scala.util.Random
  * @since 1/24/15.
  */
 object RelevantFilter {
-  
+
   def filter(d: Document, searchType: String): Boolean = {
     val date = d.attrs("date")
     val title = d.attrs("title")
@@ -39,6 +39,27 @@ object RelevantFilter {
           "www.pmnewsnigeria.com/Jul2013-Nov2014/txt/2013/12/20/kabiru-sokoto-christmas-day-bomber-jailed-for-life/index.txt")
         dis.exists(suff => path.endsWith(suff))
       }
+      case "abuja-bomb" => {
+        val dis = Set("allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201403020038.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201404150184.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/2014042102713d58.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/2014050300023d58.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201405190301.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201405200188.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201406020204.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201406232904.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201406251677.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201406280398.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201406300426.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201407020040.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201407240969.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201407280200.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201409171741.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201411030754.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201411040303.txt",
+          "allafrica.com/Jul2013-Nov2014/txt/Nigeria/militant groups/Boko Haram/stories/201411100297.txt")
+        dis.exists(suff => path.endsWith(suff))
+      }
     }
   }
 
@@ -47,7 +68,7 @@ object RelevantFilter {
     val file = new File(input)
     val dir = file.getParent
     val name = file.getName
-    for(searchType <- Seq("threat", "chinese-amb", "kabiru")) {
+    for (searchType <- Seq("abuja-bomb")) { //"threat", "chinese-amb", "kabiru")) {
       val output = dir + "/" + searchType + "." + name
       println(s"Reading from $input into $output")
       val writer = new PerLineJsonWriter(true)
