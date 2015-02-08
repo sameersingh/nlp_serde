@@ -7,6 +7,8 @@ import nlp_serde.Document
 import nlp_serde.readers.PerLineJsonReader
 import nlp_serde.writers.{PerLineJsonWriter, Writer, DocPerFile}
 
+import scala.util.Random
+
 /**
  * Created by sameer on 11/6/14.
  */
@@ -81,9 +83,11 @@ object FilterDocuments {
   }
 
   def main(args: Array[String]): Unit = {
+    val random = new Random(0)
     val input = args(0)
     val keyword = args(1).toLowerCase
-    val datePrefixes = args.drop(2).toSet
+    val prob = args(2).toDouble
+    val datePrefixes = args.drop(3).toSet
     val file = new File(input)
     val dir = file.getParent
     val name = file.getName
@@ -91,7 +95,7 @@ object FilterDocuments {
     println(s"Reading from $input into $output")
     val writer = new PerLineJsonWriter(true)
     val reader = new PerLineJsonReader(true)
-    writer.write(output, reader.read(input).filter(d => filter(d, keyword, datePrefixes)))
+    writer.write(output, reader.read(input).filter(d => filter(d, keyword, datePrefixes)).filter(d => random.nextDouble() < prob))
   }
 
 }
@@ -103,6 +107,18 @@ object SummaFormatWriter {
     def outputDir = "data/d2d/summa/" + name
     val reader = new PerLineJsonReader()
     val docs = reader.read(inputFile)
+    val writer = new SummaFormatWriter()
+    writer.write(outputDir, docs)
+  }
+}
+
+object IAISummaFormatWriter {
+  def main(args: Array[String]): Unit = {
+    val name = if(args.isEmpty) "kidnap" else args(0)
+    def inputFile = "data/d2d/"+name+".json.gz"
+    def outputDir = "data/d2d/summa/" + name
+    val reader = new PerLineJsonReader()
+    val docs = reader.read(inputFile).take(200)
     val writer = new SummaFormatWriter()
     writer.write(outputDir, docs)
   }
