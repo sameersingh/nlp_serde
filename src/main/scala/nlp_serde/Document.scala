@@ -3,6 +3,7 @@ package nlp_serde
 import nlp_serde.Util.Attr
 import play.api.libs.json.Json
 
+import scala.collection.immutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -16,7 +17,9 @@ class Document extends Attr {
   val sentences: ArrayBuffer[Sentence] = new ArrayBuffer
   val entities: ArrayBuffer[Entity] = new ArrayBuffer
 
-  def mentions = sentences.flatMap(_.mentions.map(m => (m.id -> m))).toMap
+  lazy val mentions = HashMap(sentences.flatMap(_.mentions.map(m => (m.id -> m))):_*)
+
+  lazy val entity = HashMap(entities.map(m => (m.id -> m)):_*)
 
   def this(d: nlp_serde.immutable.Document) = {
     this()
