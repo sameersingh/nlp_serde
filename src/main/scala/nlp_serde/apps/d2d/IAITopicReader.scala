@@ -94,7 +94,7 @@ object IAITopicReader {
   def main(args: Array[String]): Unit = {
     val input = args(0)
     val topics = new IAITopicReader()
-    val typ = "content"
+    val typ = "title"
     topics.readTopics(typ)
     topics.readIAIIds()
     val docs = new mutable.HashMap[Int, ArrayBuffer[Document]]()
@@ -111,6 +111,34 @@ object IAITopicReader {
     for ((t, ds) <- docs) {
       val w = new PerLineJsonWriter()
       w.write("data/d2d/iai/" + typ + "/topic-" + t + ".json.gz", ds.iterator)
+    }
+  }
+}
+
+/**
+ * Read the worddict file and create a simple html of topic: words
+ */
+object IAITopicWords {
+  def main(args: Array[String]): Unit = {
+    val topK = 10
+    val typ = "title"
+    val file = "data/d2d/iai/" + typ + "/temp_allafrica-worddict.txt"
+    var topicIdx = 0
+    for(l <- io.Source.fromFile(file, "ISO-8859-1").getLines()) {
+      val split = l.split("\\s")
+      try {
+        val words = split.map(s => {
+          val sp = s.split(":"); sp.dropRight(1).mkString(":") -> sp.last.toDouble
+        }).sortBy(-_._2).take(topK)
+        // println("<a href=\"/page?query=topic:" + typ + topicIdx + "\" class=\"btn btn-default\" style=\"text-align:left\"><b>Topic " + topicIdx + ": </b>" + words.map(_._1).mkString(", ")+"</a>")
+        println(s"<li class=\'list-group-item\'>\n\t<a href=\'iai/$typ/topic-$topicIdx.html\'>Topic $topicIdx:</a> " + words.map(_._1).mkString(", ") + "\n</li>")
+      } catch {
+        case e: Exception => {
+          println("Error in line: " + l)
+          e.printStackTrace()
+        }
+      }
+      topicIdx += 1
     }
   }
 }
