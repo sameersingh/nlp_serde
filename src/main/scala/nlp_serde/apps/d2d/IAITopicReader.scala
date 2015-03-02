@@ -2,7 +2,7 @@ package nlp_serde.apps.d2d
 
 import java.io.PrintWriter
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import nlp_serde.Document
 import nlp_serde.readers.PerLineJsonReader
 import nlp_serde.writers.PerLineJsonWriter
@@ -13,7 +13,7 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * Created by sameer on 1/30/15.
  */
-class IAITopicReader(dir: String = "data/d2d/iai/") extends Logging {
+class IAITopicReader(dir: String = "data/d2d/iai/") extends LazyLogging {
 
   // iaiID -> Topic
   val docTopics = new mutable.HashMap[String, Int]

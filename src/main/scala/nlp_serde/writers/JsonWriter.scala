@@ -63,7 +63,8 @@ object SplitPerLineJsonWriter {
       val name = file.getName
       val parent = file.getParent
       val year = d.attrs.get("date").getOrElse("NONE").take(4)
-      "%s/%s.%s".format(parent, year, name)
+      val month = d.attrs.get("date").getOrElse("NONE").drop(5).take(2)
+      "%s/%s-%s.%s".format(parent, year, month, name)
     }
     val docs = new PerLineJsonReader(true).read(inputFile)
     // println(docs.size)
