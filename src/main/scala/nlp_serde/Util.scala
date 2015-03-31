@@ -77,6 +77,11 @@ object FileUtil {
       str.replaceAll("\\$" + pc._1, Matcher.quoteReplacement(pc._2))
     })
   }
+
+  def createDir(d: String) = {
+    new File(d).mkdirs()
+    d
+  }
 }
 
 object JsonUtil {
