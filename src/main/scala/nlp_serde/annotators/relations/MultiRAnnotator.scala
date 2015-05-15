@@ -1,5 +1,5 @@
 package nlp_serde.annotators.relations
-
+/*
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.BasicDependenciesAnnotation
 import edu.stanford.nlp.util.CoreMap
 import nlp_serde.writers.PerLineJsonWriter

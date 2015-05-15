@@ -148,12 +148,12 @@
     </dependency>
 
     <!-- MultiR -->
-    <dependency>
+    <!--dependency>
       <groupId>multirexperiments</groupId>
       <artifactId>multirexperiments_${scala.tools.version}</artifactId>
       <version>0.1</version>
     </dependency>
-    <!--dependency>
+    <dependency>
         <groupId>edu.washington.cs.knowitall</groupId>
         <artifactId>multir-framework_${scala.tools.version}</artifactId>
         <version>0.3-SNAPSHOT</version>
