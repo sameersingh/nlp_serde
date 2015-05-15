@@ -6,6 +6,8 @@ import java.text.SimpleDateFormat
 import com.nytlabs.corpus.{NYTCorpusDocument, NYTCorpusDocumentParser}
 import nlp_serde.Document
 import nlp_serde.writers.PerLineJsonWriter
+import nlp_serde.annotators.StanfordAnnotator
+import nlp_serde.FileUtil
 import scala.collection.JavaConversions._
 
 /**
@@ -61,5 +63,27 @@ object NYTReader {
     val writer = new PerLineJsonWriter(true)
     writer.write(nytBase + "../nyt.txt.json.gz", docs)
     println(reader.typesofMaterials.toSeq.sortBy(_._2).map(p => p._1 + "\t" + p._2).mkString("\n"))
+  }
+}
+
+object NYTFileListAnnotator {
+  def main(args: Array[String]): Unit = {
+    if (args.length < 2) {
+      println("Not enough arguments: filelist nyt_dir")
+      System.exit(1)
+    }
+    val input = args(0)
+    val output = args(0) + ".nlp.json.gz"
+    val nytDir = args(1)
+
+    val annotator = new StanfordAnnotator(Seq("tokenize", "ssplit", "pos", "lemma", "ner", "parse"), false)
+    val s = FileUtil.inputSource(input, false)
+    val nytReader = new NYTReader()
+    val docs = s.getLines().map(_.replaceAll("_", "/")).flatMap(l => nytReader.readDoc(nytDir + "/" + l)).map(d => annotator.process(d))
+
+    val w = new PerLineJsonWriter(true)
+    w.write(output, docs)
+
+    s.close()
   }
 }

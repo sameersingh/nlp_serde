@@ -30,8 +30,13 @@ class JsonWriter(gzip: Boolean = true) extends Writer with DocPerFile {
 class PerLineJsonWriter(gzip: Boolean = true) extends Writer {
   override def write(name: String, docs: Iterator[Document]) {
     val writer = FileUtil.writer(name, gzip)
-    for (doc <- docs)
+    var idx = 0
+    for (doc <- docs) {
       writer.println(Json.stringify(JsonUtil.fromDoc(doc.toCase)))
+      idx += 1
+      if(idx % 10 == 0) print(".")
+      if(idx % 1000 == 0) println(": " + idx)
+    }
     writer.flush
     writer.close
   }

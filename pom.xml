@@ -256,6 +256,20 @@
                 <jvmArg>-Xmx16g</jvmArg>
               </jvmArgs>
             </launcher>
+            <launcher>
+              <id>stanford-annotator</id>
+              <mainClass>nlp_serde.annotators.StanfordAnnotator</mainClass>
+              <jvmArgs>
+                <jvmArg>-Xmx16g</jvmArg>
+              </jvmArgs>
+            </launcher>
+            <launcher>
+              <id>nyt-list-annotator</id>
+              <mainClass>nlp_serde.readers.NYTFileListAnnotator</mainClass>
+              <jvmArgs>
+                <jvmArg>-Xmx16g</jvmArg>
+              </jvmArgs>
+            </launcher>
           </launchers>
         </configuration>
       </plugin>
