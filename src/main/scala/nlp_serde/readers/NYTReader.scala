@@ -1,6 +1,6 @@
 package nlp_serde.readers
 
-import java.io.File
+import java.io.{FilenameFilter, File}
 import java.text.SimpleDateFormat
 
 import com.nytlabs.corpus.{NYTCorpusDocument, NYTCorpusDocumentParser}
@@ -9,6 +9,7 @@ import nlp_serde.writers.PerLineJsonWriter
 import nlp_serde.annotators.StanfordAnnotator
 import nlp_serde.FileUtil
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 /**
  * @author sameer
@@ -85,5 +86,58 @@ object NYTFileListAnnotator {
     w.write(output, docs)
 
     s.close()
+  }
+}
+
+object VerbCounts {
+  def writeMap(fname: String, map: Iterable[(String, Long)]): Unit = {
+    val writer = FileUtil.writer(fname, true)
+    for((v,c) <- map) {
+      writer.println(c + "\t" + v)
+    }
+    writer.flush()
+    writer.close()
+  }
+  def main(args: Array[String]): Unit = {
+    val reader = new PerLineJsonReader(true)
+
+    val docs = reader.readDir("data/nyt", new FilenameFilter {
+      override def accept(file: File, s: String): Boolean = s.endsWith(".nlp.json.gz")
+    })
+
+    val counts = new mutable.HashMap[String, Long]
+    val newsDesk = new mutable.HashMap[String, Long]
+    val taxonomicClassifiers = new mutable.HashMap[String, Long]
+    val onlineSection = new mutable.HashMap[String, Long]
+    var idx = 0l
+    for(d <- docs) {
+      d.attrs.get("taxonomicClassifiers").foreach(s => s.split("\t").foreach(t => {
+        taxonomicClassifiers(t) = 1 + taxonomicClassifiers.getOrElse(t, 0l)
+      }))
+      d.attrs.get("newsDesk").foreach(t => newsDesk(t) = 1 + newsDesk.getOrElse(t, 0l))
+      d.attrs.get("onlineSection").foreach(t => onlineSection(t) = 1 + onlineSection.getOrElse(t, 0l))
+      if(d.attrs.get("newsDesk").map(d => d == "National Desk" || d == "Foreign Desk").getOrElse(false)) {
+        for (s <- d.sentences; t <- s.tokens) {
+          if (t.pos.get.startsWith("V")) {
+            counts(t.lemma.get) = 1 + counts.getOrElse(t.lemma.get, 0l)
+            idx += 1
+            if (idx % 100000 == 0) {
+              println("counts: " + counts.size + "\t" + counts.toSeq.sortBy(-_._2).take(5).mkString(", "))
+            }
+            if (idx % 1000000l == 0) {
+              println("Writing files...")
+              writeMap("data/nyt/verb_counts.gz", counts)
+              writeMap("data/nyt/newsDesks.gz", newsDesk)
+              writeMap("data/nyt/taxonomicClassifiers.gz", taxonomicClassifiers)
+              writeMap("data/nyt/onlineSections.gz", onlineSection)
+            }
+          }
+        }
+      }
+    }
+    writeMap("data/nyt/verb_counts.gz", counts)
+    writeMap("data/nyt/newsDesks.gz", newsDesk)
+    writeMap("data/nyt/taxonomicClassifiers.gz", taxonomicClassifiers)
+    writeMap("data/nyt/onlineSections.gz", onlineSection)
   }
 }
