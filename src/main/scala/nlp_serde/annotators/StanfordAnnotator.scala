@@ -45,6 +45,7 @@ class StanfordAnnotator(val annotators: Seq[String] = Seq("tokenize", "ssplit", 
       for (token: CoreLabel <- sentence.get(classOf[TokensAnnotation])) {
         val t = new Token()
         t.idx = token.index()
+        if(t.idx == -1) t.idx = s.tokens.length + 1
         t.chars = token.beginPosition() -> token.endPosition()
         // t.text = token.get(classOf[TextAnnotation])
         t.text = token.originalText()
