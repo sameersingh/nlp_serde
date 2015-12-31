@@ -87,9 +87,9 @@ case class Entity(id: Int, representativeMId: Int, representativeString: String,
   }
 }
 
-case class Document(id: String, text: String, path: Option[String],
-                    sentences: Seq[Sentence], entities: Seq[Entity],
-                    attrs: Map[String, String]) {
+case class Document(id: String, text: String, path: Option[String] = None,
+                    sentences: Seq[Sentence] = Seq.empty, entities: Seq[Entity] = Seq.empty,
+                    attrs: Map[String, String] = Map.empty) {
 
   override def toString: String = toString(0)
 
