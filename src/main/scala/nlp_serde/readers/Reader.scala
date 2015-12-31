@@ -25,6 +25,7 @@ trait DocsPerFile extends Reader {
     assert(file.exists(), "%s must exist." format (file.getCanonicalPath))
     assert(file.isDirectory, "%s must be a directory." format (file.getCanonicalPath))
     (for (f <- file.listFiles(filter).toIterator) yield {
+      println("Reading " + f)
       read(f.getCanonicalPath)
     }).flatten
   }
