@@ -1,7 +1,11 @@
 package nlp_serde.apps.connframes
 
+import java.io.{File, FilenameFilter}
+
+import nlp_serde.{FileUtil, Util}
 import nlp_serde.annotators.NamedEntityMentionAnnotator
 import nlp_serde.immutable.{Document, Sentence, Token}
+import nlp_serde.readers.PerLineJsonReader
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -12,12 +16,17 @@ case class Triplet(subj: Seq[Token], verb: Token, obj: Seq[Token])
 
 trait TripletExtractor {
   def fromSentence(sentence: Sentence): Seq[Triplet]
+
+  def fromDoc(doc: Document): Seq[Triplet] = {
+    doc.sentences.flatMap(s => fromSentence(s))
+  }
 }
 
 object TripletExtractor {
 
   def tokenToMention(t: Token, s: Sentence): Seq[Token] = {
-    val mentions = s.mentions.filter(m => m.toks._1 <= t.idx && m.toks._2 > t.idx)
+    val tidx = s.tokens.indexOf(t) + 1
+    val mentions = s.mentions.filter(m => m.toks._1 <= tidx && m.toks._2 > tidx)
     if(mentions.size == 0) {
       Seq(t)
     } else {
@@ -37,9 +46,9 @@ object TripletExtractor {
 class DepParsingExtractor extends TripletExtractor {
   override def fromSentence(sentence: Sentence): Seq[Triplet] = {
     val result = new ArrayBuffer[Triplet]()
-    val verbs = sentence.tokens.filter(_.pos.get.startsWith("V"))
-    for (v <- verbs) {
-      val idx = v.idx
+    val verbs = sentence.tokens.zipWithIndex.filter(p => p._1.pos.get.startsWith("V"))
+    for ((v, idx) <- verbs) {
+      // val idx = v.idx
       val targets = sentence.deps.get.filter(_.source == idx)
       for(s <- targets.filter(_.label == "nsubj")) {
         for(o <- targets.filter(_.label == "dobj")) {
@@ -49,11 +58,12 @@ class DepParsingExtractor extends TripletExtractor {
         }
       }
     }
+    // if(result.size > 0) println("res: " + result.size)
     result
   }
 }
 
-object TripletExtractorApp {
+object TripletExtractorTest {
   def main(args: Array[String]): Unit = {
     import nlp_serde.annotators.StanfordAnnotator
 
@@ -71,5 +81,31 @@ object TripletExtractorApp {
       val trips = extr.fromSentence(s.toCase)
       println(trips.mkString("\n"))
     }
+  }
+}
+
+object TripletExtractorApp {
+  def main(args: Array[String]): Unit = {
+    val outputFile = args.lift(0).getOrElse("data/nyt/triplets.txt.gz")
+    val extr = new DepParsingExtractor
+    val reader = new PerLineJsonReader(true)
+    val ner2mention = new NamedEntityMentionAnnotator
+    val writer = FileUtil.writer(outputFile, true)
+    val docs = reader.readDir("data/nyt", new FilenameFilter {
+      override def accept(file: File, s: String): Boolean = s.endsWith(".nlp.json.gz")
+    })
+    for(d <- docs) {
+      ner2mention.process(d)
+      val date = d.attrs("date")
+      for(t <- extr.fromDoc(d.toCase)) {
+        // println("%s\t%s\t%s\t%s".format(date, t.subj.map(_.text).mkString(" "), t.verb.text,
+        //  t.obj.map(_.text).mkString(" ")))
+        writer.println("%s\t%s\t%s\t%s".format(date, t.subj.map(_.text).mkString(" "), t.verb.lemma.get,
+          t.obj.map(_.text).mkString(" ")))
+      }
+      writer.flush()
+    }
+    writer.flush()
+    writer.close()
   }
 }
